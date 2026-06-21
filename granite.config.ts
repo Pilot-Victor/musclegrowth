@@ -15,6 +15,9 @@ export default defineConfig({
       build: "vite build",
     },
   },
-  permissions: [],
+  permissions: [
+    // 직접 입력 음식의 사진 첨부(fetchAlbumItems)에 필요해요.
+    { name: "photos", access: "read" },
+  ],
   outdir: "dist",
 });
