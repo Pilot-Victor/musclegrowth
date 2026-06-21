@@ -107,6 +107,8 @@ export default function HomeScreen({ onAddFood, refreshKey }: Props) {
   const [settings, setSettings] = useState<Settings>({ weight: 70, goalType: "maintain" });
   // 최근 7일 중 목표를 달성한 날 수
   const [weekAchieved, setWeekAchieved] = useState(0);
+  // 최근 7일에 기록이 하나라도 있는지 (없으면 트렌드 문구 숨김)
+  const [hasWeekData, setHasWeekData] = useState(false);
 
   const load = useCallback(async () => {
     const [e, s, history] = await Promise.all([getTodayEntries(), getSettings(), getHistory(7)]);
@@ -116,6 +118,7 @@ export default function HomeScreen({ onAddFood, refreshKey }: Props) {
       s.weight * (GOAL_TYPES.find((g) => g.id === s.goalType) ?? GOAL_TYPES[1]).multiplier,
     );
     setWeekAchieved(history.filter((d) => dailyGoal > 0 && d.totalProtein >= dailyGoal).length);
+    setHasWeekData(history.some((d) => d.entries.length > 0));
   }, []);
 
   useEffect(() => {
@@ -147,9 +150,11 @@ export default function HomeScreen({ onAddFood, refreshKey }: Props) {
         subtitleBottom={
           <div>
             <Top.SubtitleParagraph size={15}>{dateLabel}</Top.SubtitleParagraph>
-            <div style={{ fontSize: 13, color: trendColor, fontWeight: 600, marginTop: 4 }}>
-              최근 일주일 중 {weekAchieved}회 목표를 달성했어요, {trendSuffix}
-            </div>
+            {hasWeekData && (
+              <div style={{ fontSize: 13, color: trendColor, fontWeight: 600, marginTop: 4 }}>
+                최근 일주일 중 {weekAchieved}회 목표를 달성했어요, {trendSuffix}
+              </div>
+            )}
           </div>
         }
       />
