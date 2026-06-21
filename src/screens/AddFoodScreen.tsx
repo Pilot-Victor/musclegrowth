@@ -80,7 +80,8 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
       .join(", ");
     toast.openToast(`${names} 추가했어요`);
     onAdded();
-    onClose();
+    // 화면을 닫지 않고 선택만 초기화해서 이어서 다른 음식을 추가할 수 있어요.
+    setSelections({});
   };
 
   // 용량 기반 BottomSheet 열기
@@ -145,7 +146,10 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
     await addFoodEntry(entry, date);
     toast.openToast(`${name} ${protein}g 추가했어요`);
     onAdded();
-    onClose();
+    // 화면을 닫지 않고 입력만 초기화해서 이어서 다른 음식을 추가할 수 있어요.
+    setCustomName("");
+    setCustomProtein("");
+    setCustomImageUri(undefined);
   };
 
   return (
