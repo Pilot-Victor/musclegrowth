@@ -1,0 +1,201 @@
+import { useState, useEffect, useCallback } from "react";
+import { Top, ListRow, Button } from "@toss/tds-mobile";
+import { getTodayEntries, deleteFoodEntry, getSettings } from "../storage";
+import { GOAL_TYPES } from "../data/foods";
+import MuscleArm from "../components/MuscleArm";
+import type { FoodEntry, Settings } from "../types";
+
+interface Props {
+  onAddFood: () => void;
+  refreshKey: number;
+}
+
+// ---------------------------------------------------------------------------
+// ProgressDisplay — 링 + 팔 + 수치
+// ---------------------------------------------------------------------------
+function ProgressDisplay({ current, goal }: { current: number; goal: number }) {
+  const size = 240;
+  const stroke = 16;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const pct = Math.min(current / Math.max(goal, 1), 1);
+  const offset = circumference * (1 - pct);
+  const remaining = Math.max(goal - current, 0);
+
+  // 링 색상: 달성 여부에 따라 변경
+  const ringColor = pct >= 1 ? "#4CAF50" : "#FF6B35";
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 0 4px" }}>
+      {/* 링 + 팔 컨테이너 */}
+      <div style={{ position: "relative", width: size, height: size }}>
+        {/* 진행도 링 (가장 뒤) */}
+        <svg
+          width={size} height={size}
+          style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}
+        >
+          <circle
+            cx={size / 2} cy={size / 2} r={radius}
+            fill="none" stroke="#F0F0F0" strokeWidth={stroke}
+          />
+          <circle
+            cx={size / 2} cy={size / 2} r={radius}
+            fill="none"
+            stroke={ringColor}
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            style={{ transition: "stroke-dashoffset 0.5s ease, stroke 0.3s ease" }}
+          />
+        </svg>
+
+        {/* 근육 팔 SVG (링 중앙에 배치) */}
+        <div
+          style={{
+            position: "absolute", inset: 0,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          <MuscleArm pct={pct} />
+        </div>
+
+        {/* 진행률 텍스트 (링 우측 하단) */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 18,
+            right: 18,
+            background: pct >= 1 ? "#4CAF50" : "#FF6B35",
+            color: "#fff",
+            fontSize: 12,
+            fontWeight: 700,
+            borderRadius: 10,
+            padding: "2px 8px",
+          }}
+        >
+          {Math.round(pct * 100)}%
+        </div>
+      </div>
+
+      {/* 수치 */}
+      <div style={{ textAlign: "center", marginTop: 6 }}>
+        <div style={{ fontSize: 30, fontWeight: 700, color: "#191F28", lineHeight: 1.1 }}>
+          {current}g
+        </div>
+        <div style={{ fontSize: 13, color: "#8B95A1", marginTop: 3 }}>목표 {goal}g</div>
+        <div
+          style={{
+            fontSize: 13,
+            color: pct >= 1 ? "#4CAF50" : "#FF6B35",
+            marginTop: 5,
+            fontWeight: 600,
+          }}
+        >
+          {pct >= 1 ? "목표 달성! 근육 완성 💪" : `${remaining}g 더 먹으면 근육이 완성돼요`}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// HomeScreen
+// ---------------------------------------------------------------------------
+export default function HomeScreen({ onAddFood, refreshKey }: Props) {
+  const [entries, setEntries] = useState<FoodEntry[]>([]);
+  const [settings, setSettings] = useState<Settings>({ weight: 70, goalType: "maintain" });
+
+  const load = useCallback(async () => {
+    const [e, s] = await Promise.all([getTodayEntries(), getSettings()]);
+    setEntries(e);
+    setSettings(s);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load, refreshKey]);
+
+  const handleDelete = async (id: string) => {
+    await deleteFoodEntry(id);
+    load();
+  };
+
+  const goalType = GOAL_TYPES.find((g) => g.id === settings.goalType) ?? GOAL_TYPES[1];
+  const goal = Math.round(settings.weight * goalType.multiplier);
+  const total = entries.reduce((sum, e) => sum + e.protein, 0);
+
+  const today = new Date();
+  const dateLabel = `${today.getMonth() + 1}월 ${today.getDate()}일`;
+
+  return (
+    <div style={{ paddingBottom: 80 }}>
+      <Top
+        title={<Top.TitleParagraph size={22}>단백질 트래커</Top.TitleParagraph>}
+        subtitleBottom={<Top.SubtitleParagraph size={15}>{dateLabel}</Top.SubtitleParagraph>}
+      />
+
+      <ProgressDisplay current={total} goal={goal} />
+
+      <div style={{ padding: "0 16px 16px" }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: "#191F28", marginBottom: 8 }}>
+          오늘 먹은 음식 {entries.length > 0 ? `(${entries.length})` : ""}
+        </div>
+        {entries.length === 0 ? (
+          <div style={{ textAlign: "center", color: "#8B95A1", fontSize: 14, padding: "32px 0" }}>
+            아직 기록된 음식이 없어요
+          </div>
+        ) : (
+          entries.map((entry) => (
+            <ListRow
+              key={entry.id}
+              left={
+                entry.imageUri ? (
+                  <ListRow.AssetImage src={entry.imageUri} shape="squircle" size="medium" />
+                ) : (
+                  <ListRow.AssetText shape="squircle" size="medium">
+                    {entry.emoji ?? "🍽️"}
+                  </ListRow.AssetText>
+                )
+              }
+              contents={
+                <ListRow.Texts
+                  type="2RowTypeA"
+                  top={entry.name}
+                  bottom={`단백질 ${entry.protein}g`}
+                />
+              }
+              right={
+                <Button size="small" color="dark" variant="weak" onClick={() => handleDelete(entry.id)}>
+                  삭제
+                </Button>
+              }
+            />
+          ))
+        )}
+      </div>
+
+      <div style={{ position: "fixed", bottom: 64, right: 24 }}>
+        <button
+          onClick={onAddFood}
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: "50%",
+            background: "#FF6B35",
+            color: "#fff",
+            fontSize: 28,
+            border: "none",
+            cursor: "pointer",
+            boxShadow: "0 4px 12px rgba(255,107,53,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
