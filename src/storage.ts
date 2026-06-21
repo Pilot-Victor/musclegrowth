@@ -94,18 +94,17 @@ export async function getTodayEntries(): Promise<FoodEntry[]> {
   return getEntriesForDate(todayString());
 }
 
-export async function addFoodEntry(entry: FoodEntry): Promise<void> {
-  const today = todayString();
-  const entries = await getEntriesForDate(today);
+// date 를 지정하면 해당 날짜에, 생략하면 오늘 기록에 추가/삭제해요.
+export async function addFoodEntry(entry: FoodEntry, date: string = todayString()): Promise<void> {
+  const entries = await getEntriesForDate(date);
   entries.push(entry);
-  await setItem(keyForDate(today), JSON.stringify(entries));
+  await setItem(keyForDate(date), JSON.stringify(entries));
 }
 
-export async function deleteFoodEntry(id: string): Promise<void> {
-  const today = todayString();
-  const entries = await getEntriesForDate(today);
+export async function deleteFoodEntry(id: string, date: string = todayString()): Promise<void> {
+  const entries = await getEntriesForDate(date);
   const updated = entries.filter((e) => e.id !== id);
-  await setItem(keyForDate(today), JSON.stringify(updated));
+  await setItem(keyForDate(date), JSON.stringify(updated));
 }
 
 export async function getHistory(days: number): Promise<DayHistory[]> {

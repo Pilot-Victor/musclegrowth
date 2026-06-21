@@ -10,6 +10,10 @@ import type { FoodEntry } from "../types";
 interface Props {
   onClose: () => void;
   onAdded: () => void;
+  /** 추가할 날짜(YYYY-MM-DD). 생략하면 오늘에 추가해요. */
+  date?: string;
+  /** 헤더에 표시할 날짜 라벨(예: "6월 18일"). 과거 기록 추가 시 사용해요. */
+  dateLabel?: string;
 }
 
 function calcProtein(food: PresetFood, amountStr: string): number {
@@ -18,7 +22,7 @@ function calcProtein(food: PresetFood, amountStr: string): number {
   return Math.round((food.protein / food.servingGrams) * amount * 10) / 10;
 }
 
-export default function AddFoodScreen({ onClose, onAdded }: Props) {
+export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Props) {
   const [tabIndex, setTabIndex] = useState(0);
 
   // 단위 기반 음식: 카운터
@@ -66,7 +70,7 @@ export default function AddFoodScreen({ onClose, onAdded }: Props) {
         emoji: food.emoji,
         imageUri: food.image,
       };
-      await addFoodEntry(entry);
+      await addFoodEntry(entry, date);
     }
     const names = Object.entries(selections)
       .map(([id, qty]) => {
@@ -101,7 +105,7 @@ export default function AddFoodScreen({ onClose, onAdded }: Props) {
       emoji: gramFood.emoji,
       imageUri: gramFood.image,
     };
-    await addFoodEntry(entry);
+    await addFoodEntry(entry, date);
     toast.openToast(`${gramFood.emoji} ${gramFood.name} ${protein}g 추가했어요`);
     setGramFood(null);
     setGramAmount("");
@@ -138,7 +142,7 @@ export default function AddFoodScreen({ onClose, onAdded }: Props) {
       imageUri: customImageUri,
       isCustom: true,
     };
-    await addFoodEntry(entry);
+    await addFoodEntry(entry, date);
     toast.openToast(`${name} ${protein}g 추가했어요`);
     onAdded();
     onClose();
@@ -178,7 +182,9 @@ export default function AddFoodScreen({ onClose, onAdded }: Props) {
           >
             ←
           </button>
-          <span style={{ fontSize: 18, fontWeight: 700, color: "#191F28" }}>음식 추가</span>
+          <span style={{ fontSize: 18, fontWeight: 700, color: "#191F28" }}>
+            음식 추가{dateLabel ? ` · ${dateLabel}` : ""}
+          </span>
         </div>
 
         <div style={{ borderBottom: "1px solid #F2F4F6" }}>
