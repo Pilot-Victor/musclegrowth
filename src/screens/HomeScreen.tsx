@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Top, ListRow, Button } from "@toss/tds-mobile";
-import { getTodayEntries, deleteFoodEntry, getSettings } from "../storage";
+import { getTodayEntries, deleteFoodEntry, getSettings, getHistory } from "../storage";
 import { GOAL_TYPES } from "../data/foods";
 import MuscleArm from "../components/MuscleArm";
 import type { FoodEntry, Settings } from "../types";
@@ -105,11 +105,17 @@ function ProgressDisplay({ current, goal }: { current: number; goal: number }) {
 export default function HomeScreen({ onAddFood, refreshKey }: Props) {
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [settings, setSettings] = useState<Settings>({ weight: 70, goalType: "maintain" });
+  // 최근 7일 중 목표를 달성한 날 수
+  const [weekAchieved, setWeekAchieved] = useState(0);
 
   const load = useCallback(async () => {
-    const [e, s] = await Promise.all([getTodayEntries(), getSettings()]);
+    const [e, s, history] = await Promise.all([getTodayEntries(), getSettings(), getHistory(7)]);
     setEntries(e);
     setSettings(s);
+    const dailyGoal = Math.round(
+      s.weight * (GOAL_TYPES.find((g) => g.id === s.goalType) ?? GOAL_TYPES[1]).multiplier,
+    );
+    setWeekAchieved(history.filter((d) => dailyGoal > 0 && d.totalProtein >= dailyGoal).length);
   }, []);
 
   useEffect(() => {
@@ -128,11 +134,24 @@ export default function HomeScreen({ onAddFood, refreshKey }: Props) {
   const today = new Date();
   const dateLabel = `${today.getMonth() + 1}월 ${today.getDate()}일`;
 
+  // 최근 7일 트렌드 문구 (달성 횟수에 따라 응원 메시지 변경)
+  const trendSuffix =
+    weekAchieved >= 5 ? "잘하구 있어요" : weekAchieved <= 2 ? "요즘 바쁘신가요?" : "좀 더 분발해야해요";
+  const trendColor =
+    weekAchieved >= 5 ? "#4CAF50" : weekAchieved <= 2 ? "#8B95A1" : "#FF6B35";
+
   return (
     <div style={{ paddingBottom: 80 }}>
       <Top
         title={<Top.TitleParagraph size={22}>단백질 트래커</Top.TitleParagraph>}
-        subtitleBottom={<Top.SubtitleParagraph size={15}>{dateLabel}</Top.SubtitleParagraph>}
+        subtitleBottom={
+          <div>
+            <Top.SubtitleParagraph size={15}>{dateLabel}</Top.SubtitleParagraph>
+            <div style={{ fontSize: 13, color: trendColor, fontWeight: 600, marginTop: 4 }}>
+              최근 일주일 중 {weekAchieved}회 목표를 달성했어요, {trendSuffix}
+            </div>
+          </div>
+        }
       />
 
       <ProgressDisplay current={total} goal={goal} />
