@@ -4,7 +4,12 @@ import { getSettings, saveSettings } from "../storage";
 import { GOAL_TYPES } from "../data/foods";
 import type { Settings } from "../types";
 
-export default function SettingsScreen() {
+interface Props {
+  /** 저장/뒤로가기 시 메인(홈) 화면으로 돌아가요. */
+  onDone: () => void;
+}
+
+export default function SettingsScreen({ onDone }: Props) {
   const [weightInput, setWeightInput] = useState("");
   const [goalType, setGoalType] = useState<Settings["goalType"]>("maintain");
   const toast = useToast();
@@ -31,6 +36,7 @@ export default function SettingsScreen() {
     }
     await saveSettings({ weight, goalType });
     toast.openToast("저장했어요 ✓");
+    onDone();
   };
 
   return (

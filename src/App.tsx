@@ -78,7 +78,14 @@ export default function App() {
         />
       )}
       {tab === "history" && <HistoryScreen />}
-      {tab === "settings" && <SettingsScreen />}
+      {tab === "settings" && (
+        <SettingsScreen
+          onDone={() => {
+            setHomeRefreshKey((k) => k + 1);
+            setTab("home");
+          }}
+        />
+      )}
 
       <BottomNav tab={tab} onSelect={setTab} />
 
