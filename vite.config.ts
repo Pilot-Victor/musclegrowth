@@ -11,4 +11,28 @@ export default defineConfig({
   server: {
     allowedHosts: true,
   },
+  build: {
+    // 큰 벤더 라이브러리를 별도 청크로 분리해서 초기 로딩/캐싱을 개선해요.
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (id.includes("/@toss/")) return "tds";
+          if (id.includes("/@apps-in-toss/")) return "ait";
+          // emotion 은 react 와 상호 의존이라 같은 청크로 묶어 순환 청크를 방지해요.
+          if (
+            id.includes("/react/") ||
+            id.includes("/react-dom/") ||
+            id.includes("/scheduler/") ||
+            id.includes("/@emotion/")
+          ) {
+            return "react";
+          }
+          return "vendor";
+        },
+      },
+    },
+    // TDS는 라이브러리 특성상 단일 청크가 커요(약 950KB). 경고 기준을 현실에 맞게 조정해요.
+    chunkSizeWarningLimit: 1000,
+  },
 });
