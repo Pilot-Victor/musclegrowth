@@ -4,17 +4,67 @@ import { RECOMMENDED_FOODS } from "../data/foods";
 const rankColor = (rank: number) =>
   rank === 1 ? "#FF6B35" : rank === 2 ? "#FF8B5E" : rank === 3 ? "#FFB088" : "#8B95A1";
 
+// 로컬 기준 "오늘"이 며칠째인지(epoch day) → 매일 추천이 1칸씩 바뀌어요.
+function todayPickIndex(len: number): number {
+  const now = new Date();
+  const epochDay = Math.floor((now.getTime() - now.getTimezoneOffset() * 60000) / 86400000);
+  return ((epochDay % len) + len) % len;
+}
+
 export default function RecommendScreen() {
+  const today = RECOMMENDED_FOODS[todayPickIndex(RECOMMENDED_FOODS.length)];
+
   return (
     <div style={{ paddingBottom: 80 }}>
       <Top
-        title={<Top.TitleParagraph size={22}>단백질 추천 TOP 10</Top.TitleParagraph>}
+        title={<Top.TitleParagraph size={22}>단백질 추천</Top.TitleParagraph>}
         subtitleBottom={
-          <Top.SubtitleParagraph size={15}>단백질 함량이 높은 음식과 권장 섭취 방법이에요</Top.SubtitleParagraph>
+          <Top.SubtitleParagraph size={15}>단백질 가득한 음식과 권장 섭취 방법이에요</Top.SubtitleParagraph>
         }
       />
 
-      <div style={{ padding: "4px 16px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* 오늘의 추천 (매일 바뀜) */}
+      <div style={{ padding: "4px 16px 8px" }}>
+        <div
+          style={{
+            background: "linear-gradient(135deg, #FF8B5E 0%, #FF6B35 100%)",
+            borderRadius: 18,
+            padding: "18px 20px",
+            color: "#fff",
+            boxShadow: "0 6px 18px rgba(255,107,53,0.28)",
+          }}
+        >
+          <div style={{ fontSize: 13, fontWeight: 700, opacity: 0.95 }}>🔥 오늘의 추천</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12 }}>
+            <span style={{ fontSize: 44, lineHeight: 1 }}>{today.emoji}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 20, fontWeight: 800 }}>{today.name}</div>
+              <div style={{ fontSize: 13, marginTop: 2, opacity: 0.95 }}>
+                100g당 단백질 <b style={{ fontSize: 15 }}>{today.proteinPer100g}g</b>
+              </div>
+            </div>
+          </div>
+          <div
+            style={{
+              marginTop: 14,
+              background: "rgba(255,255,255,0.18)",
+              borderRadius: 12,
+              padding: "12px 14px",
+            }}
+          >
+            <div style={{ fontSize: 13, fontWeight: 700 }}>권장량 · {today.serving}</div>
+            <div style={{ fontSize: 13, marginTop: 4, lineHeight: 1.5, opacity: 0.97 }}>{today.tip}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* 이런건 어때요? — TOP 10 */}
+      <div style={{ padding: "12px 16px 4px" }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "#191F28" }}>이런건 어때요?</div>
+        <div style={{ fontSize: 13, color: "#8B95A1", marginTop: 2 }}>단백질 함량이 높은 음식 TOP 10</div>
+      </div>
+
+      <div style={{ padding: "8px 16px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
         {RECOMMENDED_FOODS.map((food) => (
           <div
             key={food.rank}
