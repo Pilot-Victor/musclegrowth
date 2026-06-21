@@ -23,7 +23,7 @@ npm-debug.log*
 .idea/
 
 # 원본 스프라이트(작업용, 분리 완료)
-public/muscle/수정필요.jpeg
+public/muscle/수정필요.*
 
 # GitHub Actions 워크플로 (push 하려면 gh 토큰에 workflow 권한 필요 — 추후 추가)
 .github/workflows/
