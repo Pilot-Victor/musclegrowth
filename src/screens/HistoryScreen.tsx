@@ -92,7 +92,7 @@ export default function HistoryScreen() {
     : "";
 
   return (
-    <div style={{ paddingBottom: 80 }}>
+    <div style={{ paddingBottom: "calc(80px + env(safe-area-inset-bottom))" }}>
       <Top title={<Top.TitleParagraph size={22}>기록</Top.TitleParagraph>} />
 
       <div style={{ padding: "0 20px 24px" }}>

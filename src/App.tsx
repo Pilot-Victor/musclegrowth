@@ -25,45 +25,47 @@ function BottomNav({ tab, onSelect }: { tab: Tab; onSelect: (t: Tab) => void }) 
         bottom: 0,
         left: 0,
         right: 0,
-        height: 64,
         background: "#fff",
         borderTop: "1px solid #F2F4F6",
-        display: "flex",
         zIndex: 50,
+        // 노치/홈 인디케이터 영역만큼 아래 여백 (실기기 대응)
+        paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
-      {items.map((item) => {
-        const isActive = tab === item.id;
-        return (
-          <button
-            key={item.id}
-            onClick={() => onSelect(item.id)}
-            style={{
-              flex: 1,
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 3,
-              padding: 0,
-            }}
-          >
-            <span style={{ fontSize: 22 }}>{item.emoji}</span>
-            <span
+      <div style={{ height: 64, display: "flex" }}>
+        {items.map((item) => {
+          const isActive = tab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onSelect(item.id)}
               style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: isActive ? "#FF6B35" : "#8B95A1",
+                flex: 1,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 3,
+                padding: 0,
               }}
             >
-              {item.label}
-            </span>
-          </button>
-        );
-      })}
+              <span style={{ fontSize: 22 }}>{item.emoji}</span>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: isActive ? "#FF6B35" : "#8B95A1",
+                }}
+              >
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </nav>
   );
 }

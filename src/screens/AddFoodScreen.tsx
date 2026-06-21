@@ -352,7 +352,7 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
               left: 0,
               right: 0,
               bottom: 0,
-              padding: 16,
+              padding: "16px 16px calc(16px + env(safe-area-inset-bottom))",
               background: "#fff",
               borderTop: "1px solid #F2F4F6",
             }}

@@ -195,7 +195,14 @@ export default function OnboardingScreen({ onDone }: Props) {
       </div>
 
       {/* 하단 버튼 */}
-      <div style={{ padding: "12px 24px 24px", borderTop: "1px solid #F2F4F6", display: "flex", gap: 10 }}>
+      <div
+        style={{
+          padding: "12px 24px calc(24px + env(safe-area-inset-bottom))",
+          borderTop: "1px solid #F2F4F6",
+          display: "flex",
+          gap: 10,
+        }}
+      >
         {step === 2 && (
           <button
             onClick={() => setStep(1)}

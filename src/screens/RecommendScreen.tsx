@@ -1,5 +1,7 @@
-import { Top } from "@toss/tds-mobile";
+import { Top, useToast } from "@toss/tds-mobile";
 import { RECOMMENDED_FOODS } from "../data/foods";
+import type { RecommendedFood } from "../data/foods";
+import { addFoodEntry } from "../storage";
 
 const rankColor = (rank: number) =>
   rank === 1 ? "#FF6B35" : rank === 2 ? "#FF8B5E" : rank === 3 ? "#FFB088" : "#8B95A1";
@@ -13,9 +15,20 @@ function todayPickIndex(len: number): number {
 
 export default function RecommendScreen() {
   const today = RECOMMENDED_FOODS[todayPickIndex(RECOMMENDED_FOODS.length)];
+  const toast = useToast();
+
+  const logToday = async (food: RecommendedFood) => {
+    await addFoodEntry({
+      id: `${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      name: `${food.name} (${food.logLabel})`,
+      protein: food.logProtein,
+      emoji: food.emoji,
+    });
+    toast.openToast(`${food.emoji} ${food.name} ${food.logProtein}g 오늘 기록에 추가했어요`);
+  };
 
   return (
-    <div style={{ paddingBottom: 80 }}>
+    <div style={{ paddingBottom: "calc(80px + env(safe-area-inset-bottom))" }}>
       <Top
         title={<Top.TitleParagraph size={22}>단백질 추천</Top.TitleParagraph>}
         subtitleBottom={
@@ -55,6 +68,23 @@ export default function RecommendScreen() {
             <div style={{ fontSize: 13, fontWeight: 700 }}>권장량 · {today.serving}</div>
             <div style={{ fontSize: 13, marginTop: 4, lineHeight: 1.5, opacity: 0.97 }}>{today.tip}</div>
           </div>
+          <button
+            onClick={() => logToday(today)}
+            style={{
+              marginTop: 12,
+              width: "100%",
+              padding: "13px",
+              borderRadius: 12,
+              border: "none",
+              background: "#fff",
+              color: "#FF6B35",
+              fontSize: 15,
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            오늘 기록에 추가 · {today.logLabel} {today.logProtein}g
+          </button>
         </div>
       </div>
 
@@ -108,6 +138,22 @@ export default function RecommendScreen() {
                 <span style={{ fontWeight: 600, color: "#191F28" }}>권장량</span> {food.serving}
               </div>
               <div style={{ fontSize: 12, color: "#6B7684", marginTop: 4, lineHeight: 1.45 }}>{food.tip}</div>
+              <button
+                onClick={() => logToday(food)}
+                style={{
+                  marginTop: 8,
+                  padding: "6px 12px",
+                  borderRadius: 8,
+                  border: "1px solid #FFD5C3",
+                  background: "#FFF3EE",
+                  color: "#FF6B35",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                + 오늘 기록에 추가 ({food.logLabel} {food.logProtein}g)
+              </button>
             </div>
           </div>
         ))}

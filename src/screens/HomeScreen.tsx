@@ -109,6 +109,8 @@ export default function HomeScreen({ onAddFood, refreshKey }: Props) {
   const [weekAchieved, setWeekAchieved] = useState(0);
   // 최근 7일에 기록이 하나라도 있는지 (없으면 트렌드 문구 숨김)
   const [hasWeekData, setHasWeekData] = useState(false);
+  // 연속으로 목표를 달성한 날 수
+  const [streak, setStreak] = useState(0);
 
   const load = useCallback(async () => {
     const [e, s, history] = await Promise.all([getTodayEntries(), getSettings(), getHistory(7)]);
@@ -119,6 +121,14 @@ export default function HomeScreen({ onAddFood, refreshKey }: Props) {
     );
     setWeekAchieved(history.filter((d) => dailyGoal > 0 && d.totalProtein >= dailyGoal).length);
     setHasWeekData(history.some((d) => d.entries.length > 0));
+    // 연속 달성일 (history[0] = 오늘). 오늘이 아직 미달이면 끊지 않고 어제부터 카운트.
+    let s2 = 0;
+    for (let i = 0; i < history.length; i++) {
+      if (dailyGoal > 0 && history[i].totalProtein >= dailyGoal) s2++;
+      else if (i === 0) continue;
+      else break;
+    }
+    setStreak(s2);
   }, []);
 
   useEffect(() => {
@@ -144,7 +154,7 @@ export default function HomeScreen({ onAddFood, refreshKey }: Props) {
     weekAchieved >= 5 ? "#4CAF50" : weekAchieved <= 2 ? "#8B95A1" : "#FF6B35";
 
   return (
-    <div style={{ paddingBottom: 80 }}>
+    <div style={{ paddingBottom: "calc(80px + env(safe-area-inset-bottom))" }}>
       <Top
         title={<Top.TitleParagraph size={22}>단백질 트래커</Top.TitleParagraph>}
         subtitleBottom={
@@ -153,6 +163,11 @@ export default function HomeScreen({ onAddFood, refreshKey }: Props) {
             {hasWeekData && (
               <div style={{ fontSize: 13, color: trendColor, fontWeight: 600, marginTop: 4 }}>
                 최근 일주일 중 {weekAchieved}회 목표를 달성했어요, {trendSuffix}
+              </div>
+            )}
+            {streak >= 2 && (
+              <div style={{ fontSize: 13, color: "#FF6B35", fontWeight: 700, marginTop: 4 }}>
+                🔥 {streak}일 연속 목표 달성 중!
               </div>
             )}
           </div>
@@ -199,7 +214,7 @@ export default function HomeScreen({ onAddFood, refreshKey }: Props) {
         )}
       </div>
 
-      <div style={{ position: "fixed", bottom: 64, right: 24 }}>
+      <div style={{ position: "fixed", bottom: "calc(80px + env(safe-area-inset-bottom))", right: 24 }}>
         <button
           onClick={onAddFood}
           style={{
