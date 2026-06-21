@@ -50,3 +50,29 @@ export const GOAL_TYPES: GoalType[] = [
   { id: "maintain", label: "체형 유지", sublabel: "유지", multiplier: 1.6, color: "#4CAF50", bgColor: "#F1F8F1", description: "체중 × 1.6g" },
   { id: "cut", label: "체지방 감소", sublabel: "다이어트", multiplier: 1.2, color: "#2196F3", bgColor: "#E8F4FD", description: "체중 × 1.2g" },
 ];
+
+// ---------------------------------------------------------------------------
+// 추천 — 단백질 함량이 높은 음식 TOP 10
+// proteinPer100g: 100g당 단백질(g). serving: 권장 섭취량. tip: 권장 섭취 방법.
+// ---------------------------------------------------------------------------
+export interface RecommendedFood {
+  rank: number;
+  name: string;
+  emoji: string;
+  proteinPer100g: number;
+  serving: string;
+  tip: string;
+}
+
+export const RECOMMENDED_FOODS: RecommendedFood[] = [
+  { rank: 1, name: "단백질 보충제(웨이)", emoji: "💪", proteinPer100g: 80, serving: "1스쿱(약 30g)", tip: "운동 직후 30분 이내에 물이나 우유에 타서 빠르게 흡수시켜요." },
+  { rank: 2, name: "닭가슴살", emoji: "🍗", proteinPer100g: 31, serving: "끼니당 100~150g", tip: "기름 없이 삶거나 구워서 드세요. 퍽퍽하면 요거트 소스와 함께." },
+  { rank: 3, name: "참치(캔)", emoji: "🐟", proteinPer100g: 29, serving: "1캔(약 100g)", tip: "기름 대신 물에 담긴 제품을 골라 기름기를 빼고 드세요." },
+  { rank: 4, name: "소고기 살코기", emoji: "🥩", proteinPer100g: 26, serving: "끼니당 100~150g", tip: "안심·우둔처럼 기름이 적은 부위를 굽거나 삶아서 드세요." },
+  { rank: 5, name: "새우", emoji: "🦐", proteinPer100g: 24, serving: "100g(약 8~10마리)", tip: "지방이 적어 다이어트에 좋아요. 데치거나 구워서 드세요." },
+  { rank: 6, name: "돼지고기 안심", emoji: "🥓", proteinPer100g: 22, serving: "끼니당 100g", tip: "삼겹살보다 안심·등심이 단백질 대비 지방이 적어요." },
+  { rank: 7, name: "연어", emoji: "🐠", proteinPer100g: 22, serving: "100~150g, 주 2회", tip: "오메가-3가 풍부해요. 구이나 스테이크로 주 2회 정도." },
+  { rank: 8, name: "달걀", emoji: "🥚", proteinPer100g: 13, serving: "하루 2~3개", tip: "삶은 달걀이 간편하고 흡수도 좋아요. 흰자는 더 많이 먹어도 OK." },
+  { rank: 9, name: "그릭요거트", emoji: "🥛", proteinPer100g: 10, serving: "1컵(약 170g)", tip: "아침·간식으로. 무가당 제품에 견과류를 곁들이면 좋아요." },
+  { rank: 10, name: "두부", emoji: "🫙", proteinPer100g: 9, serving: "반 모(약 150g)", tip: "대표 식물성 단백질. 데치거나 구워서 양념 곁들여 드세요." },
+];

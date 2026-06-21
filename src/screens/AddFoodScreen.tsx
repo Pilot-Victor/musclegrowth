@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { Tab, TextField, FixedBottomCTA, BottomSheet, useToast } from "@toss/tds-mobile";
+import { useState, useEffect } from "react";
+import { Tab, TextField, BottomSheet, useToast } from "@toss/tds-mobile";
 import { fetchAlbumItems } from "@apps-in-toss/web-framework";
-import { addFoodEntry } from "../storage";
+import { addFoodEntry, getFavorites } from "../storage";
 import { PRESET_FOODS } from "../data/foods";
 import FoodIcon from "../components/FoodIcon";
 import type { PresetFood } from "../data/foods";
@@ -39,6 +39,18 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
   const [customName, setCustomName] = useState("");
   const [customProtein, setCustomProtein] = useState("");
   const [customImageUri, setCustomImageUri] = useState<string | undefined>();
+
+  // 즐겨찾기(온보딩에서 고른 음식)를 프리셋 상단에 배치
+  const [favorites, setFavorites] = useState<string[]>([]);
+  useEffect(() => {
+    getFavorites().then(setFavorites);
+  }, []);
+  const orderedFoods = [
+    ...favorites
+      .map((id) => PRESET_FOODS.find((f) => f.id === id))
+      .filter((f): f is PresetFood => Boolean(f)),
+    ...PRESET_FOODS.filter((f) => !favorites.includes(f.id)),
+  ];
 
   const toast = useToast();
 
@@ -185,7 +197,7 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
         >
           {tabIndex === 0 ? (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
-              {PRESET_FOODS.map((food) => {
+              {orderedFoods.map((food) => {
                 const stepBtnStyle = {
                   width: 26,
                   height: 26,
@@ -334,7 +346,34 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
         </div>
 
         {tabIndex === 1 && (
-          <FixedBottomCTA onClick={handleCustomAdd}>추가하기</FixedBottomCTA>
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              padding: 16,
+              background: "#fff",
+              borderTop: "1px solid #F2F4F6",
+            }}
+          >
+            <button
+              onClick={handleCustomAdd}
+              style={{
+                width: "100%",
+                padding: 16,
+                borderRadius: 12,
+                border: "none",
+                background: "#FF6B35",
+                color: "#fff",
+                fontSize: 16,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              추가하기
+            </button>
+          </div>
         )}
       </div>
 

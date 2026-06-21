@@ -1,15 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HomeScreen from "./screens/HomeScreen";
 import HistoryScreen from "./screens/HistoryScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import AddFoodScreen from "./screens/AddFoodScreen";
+import RecommendScreen from "./screens/RecommendScreen";
+import OnboardingScreen from "./screens/OnboardingScreen";
+import { getOnboarded } from "./storage";
 import "./App.css";
 
-type Tab = "home" | "history" | "settings";
+type Tab = "home" | "recommend" | "history" | "settings";
 
 function BottomNav({ tab, onSelect }: { tab: Tab; onSelect: (t: Tab) => void }) {
   const items: { id: Tab; emoji: string; label: string }[] = [
     { id: "home", emoji: "🏠", label: "홈" },
+    { id: "recommend", emoji: "🏆", label: "추천" },
     { id: "history", emoji: "📊", label: "기록" },
     { id: "settings", emoji: "⚙️", label: "설정" },
   ];
@@ -68,15 +72,28 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("home");
   const [showAddFood, setShowAddFood] = useState(false);
   const [homeRefreshKey, setHomeRefreshKey] = useState(0);
+  // 온보딩 노출 여부: null(확인 중) / true(첫 실행) / false(완료)
+  const [onboarding, setOnboarding] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    getOnboarded().then((done) => setOnboarding(!done));
+  }, []);
+
+  // 온보딩 여부 확인 전에는 빈 화면(깜빡임 방지)
+  if (onboarding === null) {
+    return <div style={{ maxWidth: 430, margin: "0 auto", minHeight: "100vh", background: "#fff" }} />;
+  }
+
+  if (onboarding) {
+    return <OnboardingScreen onDone={() => setOnboarding(false)} />;
+  }
 
   return (
     <div style={{ maxWidth: 430, margin: "0 auto", minHeight: "100vh", background: "#fff" }}>
       {tab === "home" && (
-        <HomeScreen
-          onAddFood={() => setShowAddFood(true)}
-          refreshKey={homeRefreshKey}
-        />
+        <HomeScreen onAddFood={() => setShowAddFood(true)} refreshKey={homeRefreshKey} />
       )}
+      {tab === "recommend" && <RecommendScreen />}
       {tab === "history" && <HistoryScreen />}
       {tab === "settings" && (
         <SettingsScreen

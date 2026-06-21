@@ -2,6 +2,8 @@ import { Storage } from "@apps-in-toss/web-framework";
 import type { FoodEntry, Settings, DayHistory } from "./types";
 
 const KEY_SETTINGS = "protein_settings";
+const KEY_ONBOARDED = "protein_onboarded";
+const KEY_FAVORITES = "protein_favorites";
 const keyForDate = (date: string) => `protein_entries_${date}`;
 
 // ---------------------------------------------------------------------------
@@ -105,6 +107,30 @@ export async function deleteFoodEntry(id: string, date: string = todayString()):
   const entries = await getEntriesForDate(date);
   const updated = entries.filter((e) => e.id !== id);
   await setItem(keyForDate(date), JSON.stringify(updated));
+}
+
+// 첫 실행 여부 (온보딩 완료 시 true 저장)
+export async function getOnboarded(): Promise<boolean> {
+  return (await getItem(KEY_ONBOARDED)) === "true";
+}
+
+export async function setOnboarded(): Promise<void> {
+  await setItem(KEY_ONBOARDED, "true");
+}
+
+// 즐겨 먹는 음식 id 목록 (프리셋 상단에 배치)
+export async function getFavorites(): Promise<string[]> {
+  const raw = await getItem(KEY_FAVORITES);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as string[];
+  } catch {
+    return [];
+  }
+}
+
+export async function saveFavorites(ids: string[]): Promise<void> {
+  await setItem(KEY_FAVORITES, JSON.stringify(ids));
 }
 
 export async function getHistory(days: number): Promise<DayHistory[]> {
