@@ -7,4 +7,8 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   base: process.env.GH_PAGES ? "/musclegrowth/" : "/",
   plugins: [react()],
+  // cloudflared 등 터널을 통한 외부 호스트 접근 허용 (dev 미리보기용)
+  server: {
+    allowedHosts: true,
+  },
 });

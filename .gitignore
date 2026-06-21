@@ -27,3 +27,6 @@ public/muscle/수정필요.jpeg
 
 # GitHub Actions 워크플로 (push 하려면 gh 토큰에 workflow 권한 필요 — 추후 추가)
 .github/workflows/
+
+# 앱인토스 빌드 산출물
+*.ait
