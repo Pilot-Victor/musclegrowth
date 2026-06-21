@@ -25,6 +25,12 @@ function calcProtein(food: PresetFood, amountStr: string): number {
 export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Props) {
   const [tabIndex, setTabIndex] = useState(0);
 
+  // 단위 기반 음식: 카드별 수량 (기본 1)
+  const [qtys, setQtys] = useState<Record<string, number>>({});
+  const getQty = (id: string) => qtys[id] ?? 1;
+  const incQty = (id: string) => setQtys((p) => ({ ...p, [id]: getQty(id) + 1 }));
+  const decQty = (id: string) => setQtys((p) => ({ ...p, [id]: Math.max(1, getQty(id) - 1) }));
+
   // 용량 기반 음식: BottomSheet
   const [gramFood, setGramFood] = useState<PresetFood | null>(null);
   const [gramAmount, setGramAmount] = useState("");
@@ -38,18 +44,21 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
 
   const previewProtein = gramFood ? calcProtein(gramFood, gramAmount) : 0;
 
-  // 단위 기반 음식: 카드의 '추가' 버튼으로 1개씩 바로 추가
-  const quickAddUnit = async (food: PresetFood) => {
+  // 단위 기반 음식: 카드에서 수량을 정해 '추가'
+  const addUnit = async (food: PresetFood) => {
+    const qty = getQty(food.id);
     const entry: FoodEntry = {
       id: `${Date.now()}_${Math.random().toString(36).slice(2)}`,
-      name: food.name,
-      protein: food.protein,
+      name: qty > 1 ? `${food.name} ×${qty}` : food.name,
+      protein: food.protein * qty,
       emoji: food.emoji,
       imageUri: food.image,
     };
     await addFoodEntry(entry, date);
-    toast.openToast(`${food.emoji} ${food.name} 추가했어요`);
+    toast.openToast(`${food.emoji} ${entry.name} 추가했어요`);
     onAdded();
+    // 화면 유지, 해당 음식 수량만 1로 초기화
+    setQtys((p) => ({ ...p, [food.id]: 1 }));
   };
 
   // 용량 기반 BottomSheet 열기
@@ -176,43 +185,78 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
         >
           {tabIndex === 0 ? (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
-              {PRESET_FOODS.map((food) => (
-                <div
-                  key={food.id}
-                  style={{
-                    background: food.bgColor,
-                    borderRadius: 12,
-                    padding: "14px 8px 12px",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: 5,
-                  }}
-                >
-                  <FoodIcon emoji={food.emoji} image={food.image} size={28} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#191F28" }}>{food.name}</span>
-                  <span style={{ fontSize: 11, color: "#8B95A1" }}>
-                    {food.serving}당 {food.protein}g
-                  </span>
-                  <button
-                    onClick={() => (food.isGramBased ? openGramSheet(food) : quickAddUnit(food))}
+              {PRESET_FOODS.map((food) => {
+                const stepBtnStyle = {
+                  width: 26,
+                  height: 26,
+                  borderRadius: "50%",
+                  background: "#fff",
+                  border: `1.5px solid ${food.color}`,
+                  color: food.color,
+                  fontSize: 16,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  lineHeight: 1,
+                  padding: 0,
+                } as const;
+                const addBtnStyle = {
+                  marginTop: 4,
+                  width: "100%",
+                  padding: "8px 0",
+                  borderRadius: 8,
+                  border: "none",
+                  background: food.color,
+                  color: "#fff",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                } as const;
+                return (
+                  <div
+                    key={food.id}
                     style={{
-                      marginTop: 4,
-                      width: "100%",
-                      padding: "8px 0",
-                      borderRadius: 8,
-                      border: "none",
-                      background: food.color,
-                      color: "#fff",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      cursor: "pointer",
+                      background: food.bgColor,
+                      borderRadius: 12,
+                      padding: "14px 8px 12px",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 5,
                     }}
                   >
-                    {food.isGramBased ? "용량 추가" : "추가"}
-                  </button>
-                </div>
-              ))}
+                    <FoodIcon emoji={food.emoji} image={food.image} size={28} />
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#191F28" }}>{food.name}</span>
+                    <span style={{ fontSize: 11, color: "#8B95A1" }}>
+                      {food.serving}당 {food.protein}g
+                    </span>
+                    {food.isGramBased ? (
+                      <button onClick={() => openGramSheet(food)} style={addBtnStyle}>
+                        용량 추가
+                      </button>
+                    ) : (
+                      <>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
+                          <button onClick={() => decQty(food.id)} style={stepBtnStyle} aria-label="수량 줄이기">
+                            −
+                          </button>
+                          <span style={{ fontSize: 15, fontWeight: 700, color: "#191F28", minWidth: 16, textAlign: "center" }}>
+                            {getQty(food.id)}
+                          </span>
+                          <button onClick={() => incQty(food.id)} style={stepBtnStyle} aria-label="수량 늘리기">
+                            +
+                          </button>
+                        </div>
+                        <button onClick={() => addUnit(food)} style={addBtnStyle}>
+                          추가
+                        </button>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
