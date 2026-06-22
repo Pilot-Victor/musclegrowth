@@ -109,6 +109,12 @@ export async function deleteFoodEntry(id: string, date: string = todayString()):
   await setItem(keyForDate(date), JSON.stringify(updated));
 }
 
+export async function updateFoodEntry(entry: FoodEntry, date: string = todayString()): Promise<void> {
+  const entries = await getEntriesForDate(date);
+  const updated = entries.map((e) => (e.id === entry.id ? entry : e));
+  await setItem(keyForDate(date), JSON.stringify(updated));
+}
+
 // 첫 실행 여부 (온보딩 완료 시 true 저장)
 export async function getOnboarded(): Promise<boolean> {
   return (await getItem(KEY_ONBOARDED)) === "true";

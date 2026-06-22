@@ -65,6 +65,10 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
       protein: food.protein * qty,
       emoji: food.emoji,
       imageUri: food.image,
+      baseName: food.name,
+      amount: qty,
+      unit: "개",
+      proteinPerUnit: food.protein,
     };
     await addFoodEntry(entry, date);
     toast.openToast(`${food.emoji} ${entry.name} 추가했어요`);
@@ -94,6 +98,10 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
       protein,
       emoji: gramFood.emoji,
       imageUri: gramFood.image,
+      baseName: gramFood.name,
+      amount,
+      unit: gramFood.unit ?? "g",
+      proteinPerUnit: gramFood.protein / (gramFood.servingGrams ?? 100),
     };
     await addFoodEntry(entry, date);
     toast.openToast(`${gramFood.emoji} ${gramFood.name} ${protein}g 추가했어요`);

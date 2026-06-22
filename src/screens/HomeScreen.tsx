@@ -1,9 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
-import { Top, ListRow, Button } from "@toss/tds-mobile";
-import { getTodayEntries, deleteFoodEntry, getSettings, getHistory } from "../storage";
+import { Top, ListRow, Button, BottomSheet, TextField, useToast } from "@toss/tds-mobile";
+import { getTodayEntries, deleteFoodEntry, updateFoodEntry, getSettings, getHistory } from "../storage";
 import { GOAL_TYPES } from "../data/foods";
 import MuscleArm from "../components/MuscleArm";
 import type { FoodEntry, Settings } from "../types";
+
+// 수정한 용량/수량으로 이름·단백질을 다시 만들어요.
+function buildName(baseName: string, amount: number, unit: string): string {
+  if (unit === "개") return amount > 1 ? `${baseName} ×${amount}` : baseName;
+  return `${baseName} (${amount}${unit})`;
+}
+function round1(n: number): number {
+  return Math.round(n * 10) / 10;
+}
 
 interface Props {
   onAddFood: () => void;
@@ -140,6 +149,50 @@ export default function HomeScreen({ onAddFood, refreshKey }: Props) {
     load();
   };
 
+  // 음식 수정
+  const toast = useToast();
+  const [editing, setEditing] = useState<FoodEntry | null>(null);
+  const [editValue, setEditValue] = useState(""); // 용량(구조화 엔트리) 또는 단백질(그 외)
+  const isStructured = editing?.proteinPerUnit != null;
+
+  const openEdit = (entry: FoodEntry) => {
+    setEditing(entry);
+    setEditValue(String(isStructuredEntry(entry) ? entry.amount : entry.protein));
+  };
+  function isStructuredEntry(e: FoodEntry) {
+    return e.proteinPerUnit != null && e.amount != null && e.baseName != null && e.unit != null;
+  }
+
+  const editPreviewProtein =
+    editing && isStructured
+      ? round1((editing.proteinPerUnit ?? 0) * (parseFloat(editValue) || 0))
+      : parseFloat(editValue) || 0;
+
+  const handleEditSave = async () => {
+    if (!editing) return;
+    const v = parseFloat(editValue);
+    if (isNaN(v) || v <= 0) {
+      toast.openToast("올바른 값을 입력해 주세요");
+      return;
+    }
+    let updated: FoodEntry;
+    if (isStructured) {
+      const protein = round1((editing.proteinPerUnit ?? 0) * v);
+      updated = {
+        ...editing,
+        amount: v,
+        protein,
+        name: buildName(editing.baseName!, v, editing.unit!),
+      };
+    } else {
+      updated = { ...editing, protein: round1(v) };
+    }
+    await updateFoodEntry(updated);
+    setEditing(null);
+    load();
+    toast.openToast("수정했어요 ✓");
+  };
+
   const goalType = GOAL_TYPES.find((g) => g.id === settings.goalType) ?? GOAL_TYPES[1];
   const goal = Math.round(settings.weight * goalType.multiplier);
   const total = entries.reduce((sum, e) => sum + e.protein, 0);
@@ -205,9 +258,14 @@ export default function HomeScreen({ onAddFood, refreshKey }: Props) {
                 />
               }
               right={
-                <Button size="small" color="dark" variant="weak" onClick={() => handleDelete(entry.id)}>
-                  삭제
-                </Button>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <Button size="small" color="primary" variant="weak" onClick={() => openEdit(entry)}>
+                    수정
+                  </Button>
+                  <Button size="small" color="dark" variant="weak" onClick={() => handleDelete(entry.id)}>
+                    삭제
+                  </Button>
+                </div>
               }
             />
           ))
@@ -235,6 +293,40 @@ export default function HomeScreen({ onAddFood, refreshKey }: Props) {
           +
         </button>
       </div>
+
+      {/* 음식 수정 (용량/수량 또는 단백질) */}
+      <BottomSheet
+        open={editing !== null}
+        onClose={() => setEditing(null)}
+        header={<BottomSheet.Header>{(editing?.baseName ?? editing?.name ?? "") + " 수정"}</BottomSheet.Header>}
+        cta={<BottomSheet.CTA onClick={handleEditSave}>저장</BottomSheet.CTA>}
+        hasTextField
+      >
+        <div style={{ padding: "0 24px 16px" }}>
+          <TextField
+            variant="box"
+            label={isStructured ? (editing?.unit === "개" ? "수량 (개)" : `용량 (${editing?.unit})`) : "단백질 (g)"}
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+          />
+          {isStructured && (parseFloat(editValue) || 0) > 0 && (
+            <div
+              style={{
+                marginTop: 16,
+                padding: "14px 16px",
+                background: "#FFF3EE",
+                borderRadius: 12,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span style={{ fontSize: 14, color: "#8B95A1" }}>단백질</span>
+              <span style={{ fontSize: 22, fontWeight: 700, color: "#FF6B35" }}>{editPreviewProtein}g</span>
+            </div>
+          )}
+        </div>
+      </BottomSheet>
     </div>
   );
 }
