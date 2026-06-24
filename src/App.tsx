@@ -10,6 +10,17 @@ import "./App.css";
 
 type Tab = "home" | "recommend" | "history" | "settings";
 
+// 앱 내 기능(딥링크) 진입 처리.
+// 예) intoss://musclegrowth/?tab=recommend , intoss://musclegrowth/?action=add
+function readInitialRoute(): { tab: Tab; addFood: boolean } {
+  const params = new URLSearchParams(window.location.search);
+  const tabParam = params.get("tab");
+  const tabs: Tab[] = ["home", "recommend", "history", "settings"];
+  const tab = tabs.includes(tabParam as Tab) ? (tabParam as Tab) : "home";
+  return { tab, addFood: params.get("action") === "add" };
+}
+const INITIAL_ROUTE = readInitialRoute();
+
 function BottomNav({ tab, onSelect }: { tab: Tab; onSelect: (t: Tab) => void }) {
   const items: { id: Tab; emoji: string; label: string }[] = [
     { id: "home", emoji: "🏠", label: "홈" },
@@ -71,8 +82,8 @@ function BottomNav({ tab, onSelect }: { tab: Tab; onSelect: (t: Tab) => void }) 
 }
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>("home");
-  const [showAddFood, setShowAddFood] = useState(false);
+  const [tab, setTab] = useState<Tab>(INITIAL_ROUTE.tab);
+  const [showAddFood, setShowAddFood] = useState(INITIAL_ROUTE.addFood);
   const [homeRefreshKey, setHomeRefreshKey] = useState(0);
   // 온보딩 노출 여부: null(확인 중) / true(첫 실행) / false(완료)
   const [onboarding, setOnboarding] = useState<boolean | null>(null);
