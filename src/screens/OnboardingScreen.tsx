@@ -2,6 +2,7 @@ import { useState } from "react";
 import { TextField, useToast } from "@toss/tds-mobile";
 import { PRESET_FOODS, GOAL_TYPES } from "../data/foods";
 import { saveSettings, saveFavorites, setOnboarded } from "../storage";
+import { useBackHandler } from "../hooks/useBackHandler";
 import FoodIcon from "../components/FoodIcon";
 import type { Settings } from "../types";
 
@@ -17,6 +18,9 @@ export default function OnboardingScreen({ onDone }: Props) {
   const [goalType, setGoalType] = useState<Settings["goalType"]>("maintain");
   const [favs, setFavs] = useState<string[]>([]);
   const toast = useToast();
+
+  // 뒤로가기: 2단계에서는 1단계로 돌아가요(앱이 종료되지 않도록).
+  useBackHandler(step === 2, () => setStep(1));
 
   const weight = parseFloat(weightInput);
   const selectedGoal = GOAL_TYPES.find((g) => g.id === goalType)!;

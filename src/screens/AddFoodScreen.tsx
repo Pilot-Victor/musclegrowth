@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Tab, TextField, BottomSheet, useToast } from "@toss/tds-mobile";
 import { fetchAlbumItems } from "@apps-in-toss/web-framework";
 import { addFoodEntry, getFavorites } from "../storage";
+import { useBackHandler } from "../hooks/useBackHandler";
 import { PRESET_FOODS } from "../data/foods";
 import FoodIcon from "../components/FoodIcon";
 import type { PresetFood } from "../data/foods";
@@ -53,6 +54,10 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
   ];
 
   const toast = useToast();
+
+  // 뒤로가기: 용량 시트가 열려 있으면 TDS BottomSheet가 처리하고,
+  // 그 외에는 음식 추가 화면 자체를 닫아요(앱이 종료되지 않도록).
+  useBackHandler(gramFood === null, onClose);
 
   const previewProtein = gramFood ? calcProtein(gramFood, gramAmount) : 0;
 
