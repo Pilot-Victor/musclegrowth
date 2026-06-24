@@ -141,15 +141,15 @@ export default function SettingsScreen({ onDone }: Props) {
           style={{
             margin: "0 20px 24px",
             padding: "16px",
-            background: "#FFF3EE",
+            background: "#EBF2FF",
             borderRadius: 12,
             border: "1px solid #FFD5C3",
           }}
         >
-          <div style={{ fontSize: 14, color: "#FF6B35", fontWeight: 600 }}>
+          <div style={{ fontSize: 14, color: "#3182F6", fontWeight: 600 }}>
             하루 권장 단백질 목표
           </div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: "#FF6B35", marginTop: 4 }}>
+          <div style={{ fontSize: 24, fontWeight: 700, color: "#3182F6", marginTop: 4 }}>
             {calculatedGoal}g
           </div>
           <div style={{ fontSize: 13, color: "#8B95A1", marginTop: 4 }}>

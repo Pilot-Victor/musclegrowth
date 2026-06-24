@@ -372,7 +372,7 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
                 padding: 16,
                 borderRadius: 12,
                 border: "none",
-                background: "#FF6B35",
+                background: "#3182F6",
                 color: "#fff",
                 fontSize: 16,
                 fontWeight: 700,
@@ -421,7 +421,7 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
               style={{
                 marginTop: 16,
                 padding: "14px 16px",
-                background: "#FFF3EE",
+                background: "#EBF2FF",
                 borderRadius: 12,
                 display: "flex",
                 justifyContent: "space-between",
@@ -429,7 +429,7 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
               }}
             >
               <span style={{ fontSize: 14, color: "#8B95A1" }}>예상 단백질</span>
-              <span style={{ fontSize: 22, fontWeight: 700, color: "#FF6B35" }}>
+              <span style={{ fontSize: 22, fontWeight: 700, color: "#3182F6" }}>
                 {previewProtein}g
               </span>
             </div>

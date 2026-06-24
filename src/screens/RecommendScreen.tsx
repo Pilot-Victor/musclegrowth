@@ -4,7 +4,7 @@ import type { RecommendedFood } from "../data/foods";
 import { addFoodEntry } from "../storage";
 
 const rankColor = (rank: number) =>
-  rank === 1 ? "#FF6B35" : rank === 2 ? "#FF8B5E" : rank === 3 ? "#FFB088" : "#8B95A1";
+  rank === 1 ? "#3182F6" : rank === 2 ? "#5B9BF8" : rank === 3 ? "#93BFF9" : "#8B95A1";
 
 // 로컬 기준 "오늘"이 며칠째인지(epoch day) → 매일 추천이 1칸씩 바뀌어요.
 function todayPickIndex(len: number): number {
@@ -40,7 +40,7 @@ export default function RecommendScreen() {
       <div style={{ padding: "4px 16px 8px" }}>
         <div
           style={{
-            background: "linear-gradient(135deg, #FF8B5E 0%, #FF6B35 100%)",
+            background: "linear-gradient(135deg, #5B9BF8 0%, #3182F6 100%)",
             borderRadius: 18,
             padding: "18px 20px",
             color: "#fff",
@@ -77,7 +77,7 @@ export default function RecommendScreen() {
               borderRadius: 12,
               border: "none",
               background: "#fff",
-              color: "#FF6B35",
+              color: "#3182F6",
               fontSize: 15,
               fontWeight: 800,
               cursor: "pointer",
@@ -129,7 +129,7 @@ export default function RecommendScreen() {
                 <span style={{ fontSize: 15, fontWeight: 700, color: "#191F28" }}>
                   {food.emoji} {food.name}
                 </span>
-                <span style={{ fontSize: 14, fontWeight: 800, color: "#FF6B35", whiteSpace: "nowrap" }}>
+                <span style={{ fontSize: 14, fontWeight: 800, color: "#3182F6", whiteSpace: "nowrap" }}>
                   {food.proteinPer100g}g
                   <span style={{ fontSize: 11, color: "#8B95A1", fontWeight: 600 }}> /100g</span>
                 </span>
@@ -145,8 +145,8 @@ export default function RecommendScreen() {
                   padding: "6px 12px",
                   borderRadius: 8,
                   border: "1px solid #FFD5C3",
-                  background: "#FFF3EE",
-                  color: "#FF6B35",
+                  background: "#EBF2FF",
+                  color: "#3182F6",
                   fontSize: 12,
                   fontWeight: 700,
                   cursor: "pointer",

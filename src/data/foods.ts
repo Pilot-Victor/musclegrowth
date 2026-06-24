@@ -46,7 +46,7 @@ export const PRESET_FOODS: PresetFood[] = [
 ];
 
 export const GOAL_TYPES: GoalType[] = [
-  { id: "bulk", label: "근육 증가", sublabel: "벌크업", multiplier: 2.2, color: "#FF6B35", bgColor: "#FFF3EE", description: "체중 × 2.2g" },
+  { id: "bulk", label: "근육 증가", sublabel: "벌크업", multiplier: 2.2, color: "#3182F6", bgColor: "#EBF2FF", description: "체중 × 2.2g" },
   { id: "maintain", label: "체형 유지", sublabel: "유지", multiplier: 1.6, color: "#4CAF50", bgColor: "#F1F8F1", description: "체중 × 1.6g" },
   { id: "cut", label: "체지방 감소", sublabel: "다이어트", multiplier: 1.2, color: "#2196F3", bgColor: "#E8F4FD", description: "체중 × 1.2g" },
 ];

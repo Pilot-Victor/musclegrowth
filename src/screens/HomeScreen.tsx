@@ -65,7 +65,7 @@ function ProgressDisplay({ current, goal }: { current: number; goal: number }) {
   const remaining = Math.max(goal - current, 0);
 
   // 링 색상: 달성 여부에 따라 변경
-  const ringColor = pct >= 1 ? "#4CAF50" : "#FF6B35";
+  const ringColor = pct >= 1 ? "#F04452" : "#3182F6";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 0 4px" }}>
@@ -108,7 +108,7 @@ function ProgressDisplay({ current, goal }: { current: number; goal: number }) {
             position: "absolute",
             bottom: 18,
             right: 18,
-            background: pct >= 1 ? "#4CAF50" : "#FF6B35",
+            background: pct >= 1 ? "#F04452" : "#3182F6",
             color: "#fff",
             fontSize: 12,
             fontWeight: 700,
@@ -129,7 +129,7 @@ function ProgressDisplay({ current, goal }: { current: number; goal: number }) {
         <div
           style={{
             fontSize: 13,
-            color: pct >= 1 ? "#4CAF50" : "#FF6B35",
+            color: pct >= 1 ? "#F04452" : "#3182F6",
             marginTop: 5,
             fontWeight: 600,
           }}
@@ -235,7 +235,7 @@ export default function HomeScreen({ onAddFood, refreshKey }: Props) {
   const trendSuffix =
     weekAchieved >= 5 ? "잘하구 있어요" : weekAchieved <= 2 ? "요즘 바쁘신가요?" : "좀 더 분발해야해요";
   const trendColor =
-    weekAchieved >= 5 ? "#4CAF50" : weekAchieved <= 2 ? "#8B95A1" : "#FF6B35";
+    weekAchieved >= 5 ? "#F04452" : weekAchieved <= 2 ? "#8B95A1" : "#3182F6";
 
   return (
     <div style={{ paddingBottom: "calc(80px + env(safe-area-inset-bottom))" }}>
@@ -250,7 +250,7 @@ export default function HomeScreen({ onAddFood, refreshKey }: Props) {
               </div>
             )}
             {streak >= 2 && (
-              <div style={{ fontSize: 13, color: "#FF6B35", fontWeight: 700, marginTop: 4 }}>
+              <div style={{ fontSize: 13, color: "#3182F6", fontWeight: 700, marginTop: 4 }}>
                 🔥 {streak}일 연속 목표 달성 중!
               </div>
             )}
@@ -310,7 +310,7 @@ export default function HomeScreen({ onAddFood, refreshKey }: Props) {
             width: 56,
             height: 56,
             borderRadius: "50%",
-            background: "#FF6B35",
+            background: "#3182F6",
             color: "#fff",
             fontSize: 28,
             border: "none",
@@ -345,7 +345,7 @@ export default function HomeScreen({ onAddFood, refreshKey }: Props) {
               style={{
                 marginTop: 16,
                 padding: "14px 16px",
-                background: "#FFF3EE",
+                background: "#EBF2FF",
                 borderRadius: 12,
                 display: "flex",
                 justifyContent: "space-between",
@@ -353,7 +353,7 @@ export default function HomeScreen({ onAddFood, refreshKey }: Props) {
               }}
             >
               <span style={{ fontSize: 14, color: "#8B95A1" }}>단백질</span>
-              <span style={{ fontSize: 22, fontWeight: 700, color: "#FF6B35" }}>{editPreviewProtein}g</span>
+              <span style={{ fontSize: 22, fontWeight: 700, color: "#3182F6" }}>{editPreviewProtein}g</span>
             </div>
           )}
         </div>

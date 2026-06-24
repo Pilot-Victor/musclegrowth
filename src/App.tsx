@@ -57,7 +57,7 @@ function BottomNav({ tab, onSelect }: { tab: Tab; onSelect: (t: Tab) => void }) 
                 style={{
                   fontSize: 11,
                   fontWeight: 600,
-                  color: isActive ? "#FF6B35" : "#8B95A1",
+                  color: isActive ? "#3182F6" : "#8B95A1",
                 }}
               >
                 {item.label}
