@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Top, ListRow, Button, BottomSheet, TextField, useToast } from "@toss/tds-mobile";
 import { getTodayEntries, deleteFoodEntry, updateFoodEntry, getSettings, getHistory } from "../storage";
-import { GOAL_TYPES } from "../data/foods";
+import { GOAL_TYPES, PRESET_FOODS } from "../data/foods";
 import MuscleArm from "../components/MuscleArm";
 import type { FoodEntry, Settings } from "../types";
 
@@ -12,6 +12,39 @@ function buildName(baseName: string, amount: number, unit: string): string {
 }
 function round1(n: number): number {
   return Math.round(n * 10) / 10;
+}
+
+// 용량/수량 수정이 가능한(구조 정보가 다 있는) 음식인지 판단해요.
+function isStructuredEntry(e: FoodEntry): boolean {
+  return e.proteinPerUnit != null && e.amount != null && e.baseName != null && e.unit != null;
+}
+
+// 이전 버전으로 추가해 구조 정보가 없는 프리셋 음식을 이름으로 매칭해
+// amount/unit/proteinPerUnit/baseName 을 복원해요. (소고기 → 용량, 달걀 → 수량)
+// 직접입력(isCustom) 음식은 단위 개념이 없어 그대로 둬요.
+function hydrateEntry(entry: FoodEntry): FoodEntry {
+  if (isStructuredEntry(entry) || entry.isCustom) return entry;
+  const preset = PRESET_FOODS.find(
+    (f) => entry.baseName === f.name || entry.name === f.name || entry.name.startsWith(f.name + " "),
+  );
+  if (!preset) return entry;
+  if (preset.isGramBased) {
+    const proteinPerUnit = preset.protein / (preset.servingGrams ?? 100);
+    return {
+      ...entry,
+      baseName: preset.name,
+      unit: preset.unit ?? "g",
+      proteinPerUnit,
+      amount: round1(entry.protein / proteinPerUnit),
+    };
+  }
+  return {
+    ...entry,
+    baseName: preset.name,
+    unit: "개",
+    proteinPerUnit: preset.protein,
+    amount: Math.max(1, Math.round(entry.protein / preset.protein)),
+  };
 }
 
 interface Props {
@@ -153,15 +186,13 @@ export default function HomeScreen({ onAddFood, refreshKey }: Props) {
   const toast = useToast();
   const [editing, setEditing] = useState<FoodEntry | null>(null);
   const [editValue, setEditValue] = useState(""); // 용량(구조화 엔트리) 또는 단백질(그 외)
-  const isStructured = editing?.proteinPerUnit != null;
+  const isStructured = editing != null && isStructuredEntry(editing);
 
   const openEdit = (entry: FoodEntry) => {
-    setEditing(entry);
-    setEditValue(String(isStructuredEntry(entry) ? entry.amount : entry.protein));
+    const hydrated = hydrateEntry(entry); // 옛 프리셋 음식이면 용량/수량 정보 복원
+    setEditing(hydrated);
+    setEditValue(String(isStructuredEntry(hydrated) ? hydrated.amount : hydrated.protein));
   };
-  function isStructuredEntry(e: FoodEntry) {
-    return e.proteinPerUnit != null && e.amount != null && e.baseName != null && e.unit != null;
-  }
 
   const editPreviewProtein =
     editing && isStructured
