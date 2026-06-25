@@ -8,15 +8,25 @@ let unsubscribe: (() => void) | null = null;
 function syncListener() {
   if (handlerStack.length > 0 && unsubscribe == null) {
     // 활성 핸들러가 생기면 안드로이드/네비바 뒤로가기를 가로채요.
-    unsubscribe = graniteEvent.addEventListener("backEvent", {
-      onEvent: () => {
-        const top = handlerStack[handlerStack.length - 1];
-        top?.();
-      },
-    });
+    // graniteEvent 는 앱인토스 네이티브 환경에서만 동작하고,
+    // 일반 브라우저(개발용 미리보기 등)에서는 에러를 던지므로 안전하게 감싸요.
+    try {
+      unsubscribe = graniteEvent.addEventListener("backEvent", {
+        onEvent: () => {
+          const top = handlerStack[handlerStack.length - 1];
+          top?.();
+        },
+      });
+    } catch {
+      unsubscribe = null; // 앱인토스 환경이 아니면 무시(브라우저 등)
+    }
   } else if (handlerStack.length === 0 && unsubscribe != null) {
     // 활성 핸들러가 없으면 리스너를 제거해 기본 뒤로가기(이전 화면/앱 종료)를 복원해요.
-    unsubscribe();
+    try {
+      unsubscribe();
+    } catch {
+      /* noop */
+    }
     unsubscribe = null;
   }
 }
