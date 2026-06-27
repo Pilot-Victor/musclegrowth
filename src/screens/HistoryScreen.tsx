@@ -152,8 +152,8 @@ export default function HistoryScreen() {
                 style={{
                   aspectRatio: "1",
                   borderRadius: 8,
-                  border: isToday ? "2px solid #3182F6" : "none",
-                  background: isToday ? "#EBF2FF" : "#F9FAFB",
+                  border: isToday ? "2px solid #FF6B35" : "none",
+                  background: isToday ? "#FFF1EA" : "#F9FAFB",
                   cursor: "pointer",
                   display: "flex",
                   flexDirection: "column",
@@ -163,7 +163,7 @@ export default function HistoryScreen() {
                   gap: 1,
                 }}
               >
-                <span style={{ fontSize: 11, color: isToday ? "#3182F6" : "#6B7684", fontWeight: isToday ? 700 : 400 }}>
+                <span style={{ fontSize: 11, color: isToday ? "#FF6B35" : "#6B7684", fontWeight: isToday ? 700 : 400 }}>
                   {day}
                 </span>
                 {emoji && <span style={{ fontSize: 12 }}>{emoji}</span>}
@@ -210,7 +210,7 @@ export default function HistoryScreen() {
                     <span style={{ fontSize: 20 }}>{f.emoji ?? "🍽️"}</span>
                   )}
                   <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: "#191F28" }}>{f.name}</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#3182F6" }}>{f.protein}g</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#FF6B35" }}>{f.protein}g</div>
                   <button
                     onClick={() => selectedDate && handleDelete(f.id, selectedDate)}
                     style={{
@@ -236,9 +236,9 @@ export default function HistoryScreen() {
                 marginTop: 16,
                 width: "100%",
                 padding: "13px",
-                background: "#3182F6",
+                background: "#FF6B35",
                 border: "none",
-                borderRadius: 10,
+                borderRadius: 8,
                 fontSize: 15,
                 fontWeight: 700,
                 cursor: "pointer",
@@ -256,7 +256,7 @@ export default function HistoryScreen() {
               padding: "12px",
               background: "#F2F4F6",
               border: "none",
-              borderRadius: 10,
+              borderRadius: 8,
               fontSize: 15,
               fontWeight: 600,
               cursor: "pointer",

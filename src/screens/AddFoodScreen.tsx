@@ -1,12 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Tab, TextField, BottomSheet, useToast } from "@toss/tds-mobile";
 import { fetchAlbumItems } from "@apps-in-toss/web-framework";
-import { addFoodEntry, getFavorites } from "../storage";
+import {
+  addFoodEntry,
+  getFavorites,
+  getCustomFoods,
+  addCustomFood,
+  updateCustomFood,
+  removeCustomFood,
+  MAX_CUSTOM_FOODS,
+} from "../storage";
 import { useBackHandler } from "../hooks/useBackHandler";
 import { PRESET_FOODS } from "../data/foods";
 import FoodIcon from "../components/FoodIcon";
 import type { PresetFood } from "../data/foods";
-import type { FoodEntry } from "../types";
+import type { FoodEntry, CustomFood } from "../types";
 
 interface Props {
   onClose: () => void;
@@ -22,6 +30,14 @@ function calcProtein(food: PresetFood, amountStr: string): number {
   if (isNaN(amount) || amount <= 0 || !food.servingGrams) return 0;
   return Math.round((food.protein / food.servingGrams) * amount * 10) / 10;
 }
+
+// 즐겨먹는 음식 아이콘 선택용 이모지 목록
+const FOOD_EMOJIS = [
+  "🍗", "🥩", "🍖", "🍤", "🐟", "🦐",
+  "🥚", "🥛", "🧀", "🍚", "🍞", "🥜",
+  "🫘", "🥦", "🍌", "🥗", "🍣", "🍱",
+  "🥪", "🌭", "🍫", "💪", "🥤", "🍳",
+];
 
 export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Props) {
   const [tabIndex, setTabIndex] = useState(0);
@@ -46,7 +62,47 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
   useEffect(() => {
     getFavorites().then(setFavorites);
   }, []);
+
+  // 내 음식(사용자 등록) — 프리셋 맨 앞에 단위(개) 음식으로 노출
+  const [customFoods, setCustomFoods] = useState<CustomFood[]>([]);
+  const loadCustomFoods = () => getCustomFoods().then(setCustomFoods);
+  useEffect(() => {
+    loadCustomFoods();
+  }, []);
+
+  // 즐겨먹는 음식: 추가/편집 시트 · 길게눌러 메뉴 · 삭제 확인 · 20개 제한
+  const [foodSheetOpen, setFoodSheetOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [newEmoji, setNewEmoji] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newProtein, setNewProtein] = useState("");
+  const [actionTarget, setActionTarget] = useState<CustomFood | null>(null); // 길게눌러 선택한 음식
+  const [confirmDelete, setConfirmDelete] = useState<CustomFood | null>(null); // 삭제 확인 대상
+  const [limitOpen, setLimitOpen] = useState(false); // 20개 초과 시 삭제 유도
+
+  // 길게 누르기(꾹) 감지
+  const pressTimer = useRef<number | null>(null);
+  const startPress = (cf: CustomFood) => {
+    pressTimer.current = window.setTimeout(() => setActionTarget(cf), 450);
+  };
+  const cancelPress = () => {
+    if (pressTimer.current != null) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  };
+
+  const customPresets: PresetFood[] = customFoods.map((cf) => ({
+    id: cf.id,
+    name: cf.name,
+    serving: "1개",
+    protein: cf.protein,
+    emoji: cf.emoji,
+    color: "#FF6B35",
+    bgColor: "#FFF1EA",
+  }));
   const orderedFoods = [
+    ...customPresets,
     ...favorites
       .map((id) => PRESET_FOODS.find((f) => f.id === id))
       .filter((f): f is PresetFood => Boolean(f)),
@@ -154,6 +210,65 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
     setCustomImageUri(undefined);
   };
 
+  // 추가 시트 열기 (20개 초과면 삭제 유도 팝업으로)
+  const openAddSheet = () => {
+    if (customFoods.length >= MAX_CUSTOM_FOODS) {
+      setLimitOpen(true);
+      return;
+    }
+    setEditingId(null);
+    setNewEmoji("");
+    setNewName("");
+    setNewProtein("");
+    setFoodSheetOpen(true);
+  };
+
+  // 편집 시트 열기 (기존 값 채움)
+  const openEditSheet = (cf: CustomFood) => {
+    setEditingId(cf.id);
+    setNewEmoji(cf.emoji);
+    setNewName(cf.name);
+    setNewProtein(String(cf.protein));
+    setFoodSheetOpen(true);
+  };
+
+  // 추가/편집 저장
+  const handleSaveFood = async () => {
+    const name = newName.trim();
+    const protein = parseFloat(newProtein);
+    if (!name) {
+      toast.openToast("음식 이름을 입력해 주세요");
+      return;
+    }
+    if (isNaN(protein) || protein <= 0) {
+      toast.openToast("올바른 단백질(g)을 입력해 주세요");
+      return;
+    }
+    const emoji = newEmoji.trim() || "🍽️";
+    if (editingId) {
+      await updateCustomFood({ id: editingId, name, protein, emoji });
+      toast.openToast("수정했어요 ✓");
+    } else {
+      await addCustomFood({
+        id: `cf_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        name,
+        protein,
+        emoji,
+      });
+      toast.openToast(`${emoji} ${name} 추가했어요`);
+    }
+    setFoodSheetOpen(false);
+    loadCustomFoods();
+  };
+
+  // 삭제 확정
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete) return;
+    await removeCustomFood(confirmDelete.id);
+    setConfirmDelete(null);
+    loadCustomFoods();
+  };
+
   return (
     <>
       <div
@@ -209,8 +324,27 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
           }}
         >
           {tabIndex === 0 ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
+            <>
+              <button
+                onClick={openAddSheet}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  marginBottom: 12,
+                  borderRadius: 8,
+                  border: "1px dashed #FFB07A",
+                  background: "#FFF1EA",
+                  color: "#FF6B35",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                ➕ 즐겨먹는 음식 추가
+              </button>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
               {orderedFoods.map((food) => {
+                const isCustom = food.id.startsWith("cf_");
                 const stepBtnStyle = {
                   width: 26,
                   height: 26,
@@ -242,9 +376,20 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
                 return (
                   <div
                     key={food.id}
+                    onPointerDown={
+                      isCustom
+                        ? () => {
+                            const cf = customFoods.find((c) => c.id === food.id);
+                            if (cf) startPress(cf);
+                          }
+                        : undefined
+                    }
+                    onPointerUp={isCustom ? cancelPress : undefined}
+                    onPointerLeave={isCustom ? cancelPress : undefined}
                     style={{
+                      position: "relative",
                       background: food.bgColor,
-                      borderRadius: 12,
+                      borderRadius: 8,
                       padding: "14px 8px 12px",
                       display: "flex",
                       flexDirection: "column",
@@ -252,6 +397,32 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
                       gap: 5,
                     }}
                   >
+                    {isCustom && (
+                      <button
+                        onClick={() => {
+                          const cf = customFoods.find((c) => c.id === food.id);
+                          if (cf) setActionTarget(cf);
+                        }}
+                        aria-label="메뉴 (수정/삭제)"
+                        style={{
+                          position: "absolute",
+                          top: 2,
+                          right: 4,
+                          width: 22,
+                          height: 22,
+                          border: "none",
+                          background: "transparent",
+                          color: "#8B95A1",
+                          fontSize: 18,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          padding: 0,
+                          lineHeight: 1,
+                        }}
+                      >
+                        ⋮
+                      </button>
+                    )}
                     <FoodIcon emoji={food.emoji} image={food.image} size={28} />
                     <span style={{ fontSize: 13, fontWeight: 600, color: "#191F28" }}>{food.name}</span>
                     <span style={{ fontSize: 11, color: "#8B95A1" }}>
@@ -282,7 +453,8 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
                   </div>
                 );
               })}
-            </div>
+              </div>
+            </>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               <TextField
@@ -375,9 +547,9 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
               style={{
                 width: "100%",
                 padding: 16,
-                borderRadius: 12,
+                borderRadius: 8,
                 border: "none",
-                background: "#3182F6",
+                background: "#FF6B35",
                 color: "#fff",
                 fontSize: 16,
                 fontWeight: 700,
@@ -426,19 +598,217 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
               style={{
                 marginTop: 16,
                 padding: "14px 16px",
-                background: "#EBF2FF",
-                borderRadius: 12,
+                background: "#FFF1EA",
+                borderRadius: 8,
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
               }}
             >
               <span style={{ fontSize: 14, color: "#8B95A1" }}>예상 단백질</span>
-              <span style={{ fontSize: 22, fontWeight: 700, color: "#3182F6" }}>
+              <span style={{ fontSize: 22, fontWeight: 700, color: "#FF6B35" }}>
                 {previewProtein}g
               </span>
             </div>
           )}
+        </div>
+      </BottomSheet>
+
+      {/* 즐겨먹는 음식 추가 / 편집 BottomSheet */}
+      <BottomSheet
+        open={foodSheetOpen}
+        onClose={() => setFoodSheetOpen(false)}
+        header={
+          <BottomSheet.Header>{editingId ? "즐겨먹는 음식 수정" : "즐겨먹는 음식 추가"}</BottomSheet.Header>
+        }
+        cta={<BottomSheet.CTA onClick={handleSaveFood}>{editingId ? "수정하기" : "추가하기"}</BottomSheet.CTA>}
+        hasTextField
+      >
+        <div style={{ padding: "0 24px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
+          <TextField
+            variant="box"
+            label="음식 이름"
+            placeholder="예: 닭가슴살 소시지"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+          />
+          <TextField
+            variant="box"
+            label="1개당 단백질 (g)"
+            placeholder="예: 12"
+            value={newProtein}
+            onChange={(e) => setNewProtein(e.target.value)}
+          />
+          <div>
+            <div style={{ fontSize: 13, color: "#6B7684", marginBottom: 8 }}>아이콘 선택</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
+              {FOOD_EMOJIS.map((em) => (
+                <button
+                  key={em}
+                  onClick={() => setNewEmoji(em)}
+                  style={{
+                    height: 42,
+                    fontSize: 22,
+                    borderRadius: 8,
+                    cursor: "pointer",
+                    border: newEmoji === em ? "2px solid #FF6B35" : "1px solid #E5E8EB",
+                    background: newEmoji === em ? "#FFF1EA" : "#fff",
+                  }}
+                >
+                  {em}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </BottomSheet>
+
+      {/* 길게 눌러 — 수정 / 삭제 선택 */}
+      <BottomSheet
+        open={actionTarget !== null}
+        onClose={() => setActionTarget(null)}
+        header={
+          actionTarget ? (
+            <BottomSheet.Header>
+              {actionTarget.emoji} {actionTarget.name}
+            </BottomSheet.Header>
+          ) : undefined
+        }
+      >
+        <div style={{ padding: "4px 24px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
+          <button
+            onClick={() => {
+              const cf = actionTarget;
+              setActionTarget(null);
+              if (cf) openEditSheet(cf);
+            }}
+            style={{
+              width: "100%",
+              padding: 16,
+              borderRadius: 8,
+              border: "none",
+              background: "#FF6B35",
+              color: "#fff",
+              fontSize: 15,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            ✏️ 수정하기
+          </button>
+          <button
+            onClick={() => {
+              const cf = actionTarget;
+              setActionTarget(null);
+              if (cf) setConfirmDelete(cf);
+            }}
+            style={{
+              width: "100%",
+              padding: 16,
+              borderRadius: 8,
+              border: "1px solid #E5E8EB",
+              background: "#fff",
+              color: "#FF4D4F",
+              fontSize: 15,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            🗑️ 삭제하기
+          </button>
+        </div>
+      </BottomSheet>
+
+      {/* 삭제 확인 — 예 / 아니오 */}
+      <BottomSheet
+        open={confirmDelete !== null}
+        onClose={() => setConfirmDelete(null)}
+        header={<BottomSheet.Header>정말 삭제할까요?</BottomSheet.Header>}
+      >
+        <div style={{ padding: "0 24px 24px" }}>
+          <div style={{ fontSize: 14, color: "#8B95A1", marginBottom: 16 }}>
+            "{confirmDelete?.name}" 을(를) 즐겨먹는 음식에서 삭제해요.
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              onClick={() => setConfirmDelete(null)}
+              style={{
+                flex: 1,
+                padding: 16,
+                borderRadius: 8,
+                border: "1px solid #E5E8EB",
+                background: "#fff",
+                color: "#191F28",
+                fontSize: 15,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              아니오
+            </button>
+            <button
+              onClick={handleConfirmDelete}
+              style={{
+                flex: 1,
+                padding: 16,
+                borderRadius: 8,
+                border: "none",
+                background: "#FF4D4F",
+                color: "#fff",
+                fontSize: 15,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              예
+            </button>
+          </div>
+        </div>
+      </BottomSheet>
+
+      {/* 20개 초과 — 삭제 유도 */}
+      <BottomSheet
+        open={limitOpen}
+        onClose={() => setLimitOpen(false)}
+        header={<BottomSheet.Header>즐겨먹는 음식이 가득 찼어요</BottomSheet.Header>}
+      >
+        <div style={{ padding: "0 20px 24px" }}>
+          <div style={{ fontSize: 14, color: "#8B95A1", marginBottom: 12 }}>
+            최대 {MAX_CUSTOM_FOODS}개까지 등록할 수 있어요. 새로 추가하려면 기존 음식을 삭제해 주세요.
+          </div>
+          {customFoods.map((cf) => (
+            <div
+              key={cf.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "12px 0",
+                borderBottom: "1px solid #F2F4F6",
+              }}
+            >
+              <span style={{ fontSize: 24 }}>{cf.emoji}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "#191F28" }}>{cf.name}</div>
+                <div style={{ fontSize: 12, color: "#8B95A1" }}>1개당 {cf.protein}g</div>
+              </div>
+              <button
+                onClick={() => setConfirmDelete(cf)}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: 8,
+                  border: "1px solid #FFD5C3",
+                  background: "#FFF1EA",
+                  color: "#FF6B35",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                삭제
+              </button>
+            </div>
+          ))}
         </div>
       </BottomSheet>
     </>

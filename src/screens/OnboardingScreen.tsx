@@ -65,7 +65,7 @@ export default function OnboardingScreen({ onDone }: Props) {
         {[1, 2].map((s) => (
           <div
             key={s}
-            style={{ flex: 1, height: 4, borderRadius: 2, background: s <= step ? "#3182F6" : "#F2F4F6" }}
+            style={{ flex: 1, height: 4, borderRadius: 2, background: s <= step ? "#FF6B35" : "#F2F4F6" }}
           />
         ))}
       </div>
@@ -99,7 +99,7 @@ export default function OnboardingScreen({ onDone }: Props) {
                   onClick={() => setGoalType(g.id)}
                   style={{
                     padding: "16px",
-                    borderRadius: 12,
+                    borderRadius: 8,
                     border: `2px solid ${isSel ? g.color : "#F2F4F6"}`,
                     background: isSel ? g.bgColor : "#FAFAFA",
                     marginBottom: 10,
@@ -123,13 +123,13 @@ export default function OnboardingScreen({ onDone }: Props) {
                 style={{
                   marginTop: 14,
                   padding: "16px",
-                  background: "#EBF2FF",
-                  borderRadius: 12,
+                  background: "#FFF1EA",
+                  borderRadius: 8,
                   border: "1px solid #FFD5C3",
                 }}
               >
-                <div style={{ fontSize: 14, color: "#3182F6", fontWeight: 600 }}>하루 권장 단백질 목표</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: "#3182F6", marginTop: 4 }}>{calcGoal}g</div>
+                <div style={{ fontSize: 14, color: "#FF6B35", fontWeight: 600 }}>하루 권장 단백질 목표</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#FF6B35", marginTop: 4 }}>{calcGoal}g</div>
               </div>
             )}
           </>
@@ -141,7 +141,7 @@ export default function OnboardingScreen({ onDone }: Props) {
             <div style={{ fontSize: 14, color: "#8B95A1", marginTop: 8, marginBottom: 8 }}>
               자주 먹는 단백질 음식을 최대 {MAX_FAV}개 고르면, 음식 추가 화면 맨 위에 보여드려요.
             </div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#3182F6", marginBottom: 14 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#FF6B35", marginBottom: 14 }}>
               {favs.length} / {MAX_FAV} 선택
             </div>
 
@@ -156,7 +156,7 @@ export default function OnboardingScreen({ onDone }: Props) {
                       position: "relative",
                       background: sel ? food.bgColor : "#FAFAFB",
                       border: `2px solid ${sel ? food.color : "#F2F4F6"}`,
-                      borderRadius: 12,
+                      borderRadius: 8,
                       padding: "14px 6px",
                       cursor: "pointer",
                       display: "flex",
@@ -212,7 +212,7 @@ export default function OnboardingScreen({ onDone }: Props) {
             onClick={() => setStep(1)}
             style={{
               padding: "16px 20px",
-              borderRadius: 12,
+              borderRadius: 8,
               border: "none",
               background: "#F2F4F6",
               color: "#191F28",
@@ -229,9 +229,9 @@ export default function OnboardingScreen({ onDone }: Props) {
           style={{
             flex: 1,
             padding: "16px",
-            borderRadius: 12,
+            borderRadius: 8,
             border: "none",
-            background: "#3182F6",
+            background: "#FF6B35",
             color: "#fff",
             fontSize: 16,
             fontWeight: 700,

@@ -30,7 +30,7 @@ export interface GoalType {
 export const PRESET_FOODS: PresetFood[] = [
   { id: "f1", name: "닭가슴살", serving: "100g", protein: 23, emoji: "🍗", color: "#FFE0B2", bgColor: "#FFF3E0", isGramBased: true, servingGrams: 100, unit: "g" },
   { id: "f2", name: "달걀", serving: "1개", protein: 6, emoji: "🥚", color: "#FFF9C4", bgColor: "#FFFDE7" },
-  { id: "f3", name: "두부", serving: "100g", protein: 8, emoji: "🫙", color: "#DCEDC8", bgColor: "#F1F8E9", isGramBased: true, servingGrams: 100, unit: "g" },
+  { id: "f3", name: "두부", serving: "100g", protein: 8, emoji: "⬜", color: "#DCEDC8", bgColor: "#F1F8E9", isGramBased: true, servingGrams: 100, unit: "g" },
   { id: "f4", name: "그릭요거트", serving: "170g", protein: 17, emoji: "🥛", color: "#E3F2FD", bgColor: "#E3F2FD", isGramBased: true, servingGrams: 170, unit: "g" },
   { id: "f5", name: "참치캔", serving: "1캔", protein: 20, emoji: "🐟", color: "#B3E5FC", bgColor: "#E1F5FE" },
   { id: "f6", name: "소고기", serving: "100g", protein: 26, emoji: "🥩", color: "#FFCCBC", bgColor: "#FBE9E7", isGramBased: true, servingGrams: 100, unit: "g" },
@@ -46,7 +46,7 @@ export const PRESET_FOODS: PresetFood[] = [
 ];
 
 export const GOAL_TYPES: GoalType[] = [
-  { id: "bulk", label: "근육 증가", sublabel: "벌크업", multiplier: 2.2, color: "#3182F6", bgColor: "#EBF2FF", description: "체중 × 2.2g" },
+  { id: "bulk", label: "근육 증가", sublabel: "벌크업", multiplier: 2.2, color: "#FF6B35", bgColor: "#FFF1EA", description: "체중 × 2.2g" },
   { id: "maintain", label: "체형 유지", sublabel: "유지", multiplier: 1.6, color: "#4CAF50", bgColor: "#F1F8F1", description: "체중 × 1.6g" },
   { id: "cut", label: "체지방 감소", sublabel: "다이어트", multiplier: 1.2, color: "#2196F3", bgColor: "#E8F4FD", description: "체중 × 1.2g" },
 ];

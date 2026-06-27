@@ -1,9 +1,10 @@
 import { Storage } from "@apps-in-toss/web-framework";
-import type { FoodEntry, Settings, DayHistory } from "./types";
+import type { FoodEntry, Settings, DayHistory, CustomFood } from "./types";
 
 const KEY_SETTINGS = "protein_settings";
 const KEY_ONBOARDED = "protein_onboarded";
 const KEY_FAVORITES = "protein_favorites";
+const KEY_CUSTOM_FOODS = "protein_custom_foods";
 const keyForDate = (date: string) => `protein_entries_${date}`;
 
 // ---------------------------------------------------------------------------
@@ -138,6 +139,37 @@ export async function getFavorites(): Promise<string[]> {
 export async function saveFavorites(ids: string[]): Promise<void> {
   await setItem(KEY_FAVORITES, JSON.stringify(ids));
 }
+
+// 사용자가 등록한 '내 음식' 목록 (최신 등록이 앞)
+export async function getCustomFoods(): Promise<CustomFood[]> {
+  const raw = await getItem(KEY_CUSTOM_FOODS);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as CustomFood[];
+  } catch {
+    return [];
+  }
+}
+
+export async function addCustomFood(food: CustomFood): Promise<void> {
+  const foods = await getCustomFoods();
+  foods.unshift(food);
+  await setItem(KEY_CUSTOM_FOODS, JSON.stringify(foods));
+}
+
+export async function updateCustomFood(food: CustomFood): Promise<void> {
+  const foods = await getCustomFoods();
+  const updated = foods.map((f) => (f.id === food.id ? food : f));
+  await setItem(KEY_CUSTOM_FOODS, JSON.stringify(updated));
+}
+
+export async function removeCustomFood(id: string): Promise<void> {
+  const foods = await getCustomFoods();
+  await setItem(KEY_CUSTOM_FOODS, JSON.stringify(foods.filter((f) => f.id !== id)));
+}
+
+// 즐겨먹는 음식 최대 개수
+export const MAX_CUSTOM_FOODS = 20;
 
 export async function getHistory(days: number): Promise<DayHistory[]> {
   const result: DayHistory[] = [];

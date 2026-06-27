@@ -22,3 +22,11 @@ export interface DayHistory {
   entries: FoodEntry[];
   totalProtein: number;
 }
+
+// 사용자가 직접 등록한 '내 음식'(즐겨 먹는 음식). 단위(개) 기반으로 기록해요.
+export interface CustomFood {
+  id: string; // "cf_..."
+  name: string;
+  protein: number; // 1개당 단백질(g)
+  emoji: string;
+}

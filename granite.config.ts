@@ -4,7 +4,7 @@ export default defineConfig({
   appName: "musclegrowth",
   brand: {
     displayName: "단백질 트래커",
-    primaryColor: "#3182F6",
+    primaryColor: "#FF6B35",
     icon: "/icon.png",
   },
   web: {
