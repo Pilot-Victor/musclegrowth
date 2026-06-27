@@ -680,7 +680,8 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
             onClick={() => {
               const cf = actionTarget;
               setActionTarget(null);
-              if (cf) openEditSheet(cf);
+              // 현재 시트가 닫힌 뒤 편집 시트를 열어요(두 시트가 겹치면 안 떠요).
+              if (cf) setTimeout(() => openEditSheet(cf), 250);
             }}
             style={{
               width: "100%",
@@ -700,7 +701,8 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
             onClick={() => {
               const cf = actionTarget;
               setActionTarget(null);
-              if (cf) setConfirmDelete(cf);
+              // 현재 시트가 닫힌 뒤 삭제 확인 시트를 열어요(겹침 방지).
+              if (cf) setTimeout(() => setConfirmDelete(cf), 250);
             }}
             style={{
               width: "100%",
