@@ -34,13 +34,13 @@ export default function CustomFoodsScreen({ onClose }: Props) {
     load();
   }, []);
 
-  // 추가/편집 시트 하나로 처리 (삭제는 편집 시트 안에서 2번 탭)
+  // 추가/편집은 시트로, 삭제는 행의 '삭제' 버튼 2번 탭으로 처리해요.
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [protein, setProtein] = useState("");
   const [emoji, setEmoji] = useState("");
-  const [deleteArmed, setDeleteArmed] = useState(false);
+  const [deleteArmedId, setDeleteArmedId] = useState<string | null>(null); // 삭제 2번탭 대상 행
   const toast = useToast();
 
   // 뒤로가기: 시트가 열려 있으면 TDS가 처리, 아니면 화면을 닫아요.
@@ -55,7 +55,7 @@ export default function CustomFoodsScreen({ onClose }: Props) {
     setName("");
     setProtein("");
     setEmoji("");
-    setDeleteArmed(false);
+    setDeleteArmedId(null);
     setSheetOpen(true);
   };
 
@@ -64,7 +64,7 @@ export default function CustomFoodsScreen({ onClose }: Props) {
     setName(cf.name);
     setProtein(String(cf.protein));
     setEmoji(cf.emoji);
-    setDeleteArmed(false);
+    setDeleteArmedId(null);
     setSheetOpen(true);
   };
 
@@ -93,21 +93,18 @@ export default function CustomFoodsScreen({ onClose }: Props) {
       toast.openToast(`${em} ${nm} 등록했어요`);
     }
     setSheetOpen(false);
-    setDeleteArmed(false);
     load();
   };
 
-  // 편집 시트 안에서 삭제 (실수 방지 위해 2번 탭 확인)
-  const handleDelete = async () => {
-    if (!editingId) return;
-    if (!deleteArmed) {
-      setDeleteArmed(true);
+  // 행의 '삭제' 버튼: 첫 탭은 확인 대기, 같은 행을 한 번 더 탭하면 삭제.
+  const handleDeleteRow = async (id: string) => {
+    if (deleteArmedId !== id) {
+      setDeleteArmedId(id);
       return;
     }
-    await removeCustomFood(editingId);
+    await removeCustomFood(id);
     toast.openToast("삭제했어요");
-    setSheetOpen(false);
-    setDeleteArmed(false);
+    setDeleteArmedId(null);
     load();
   };
 
@@ -173,38 +170,62 @@ export default function CustomFoodsScreen({ onClose }: Props) {
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {foods.map((cf) => (
-                <div
-                  key={cf.id}
-                  onClick={() => openEdit(cf)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    padding: "14px 16px",
-                    borderRadius: 12,
-                    background: "#FAFAFB",
-                    border: "1px solid #F2F4F6",
-                    cursor: "pointer",
-                  }}
-                >
-                  <span style={{ fontSize: 26 }}>{cf.emoji}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: "#191F28" }}>{cf.name}</div>
-                    <div style={{ fontSize: 12, color: "#8B95A1", marginTop: 2 }}>1개당 {cf.protein}g</div>
-                  </div>
-                  <span
+              {foods.map((cf) => {
+                const armed = deleteArmedId === cf.id;
+                return (
+                  <div
+                    key={cf.id}
                     style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: "#FF6B35",
-                      flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "12px 14px",
+                      borderRadius: 12,
+                      background: "#FAFAFB",
+                      border: "1px solid #F2F4F6",
                     }}
                   >
-                    수정 ›
-                  </span>
-                </div>
-              ))}
+                    <span style={{ fontSize: 26 }}>{cf.emoji}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: "#191F28" }}>{cf.name}</div>
+                      <div style={{ fontSize: 12, color: "#8B95A1", marginTop: 2 }}>1개당 {cf.protein}g</div>
+                    </div>
+                    <button
+                      onClick={() => openEdit(cf)}
+                      style={{
+                        flexShrink: 0,
+                        padding: "8px 14px",
+                        borderRadius: 8,
+                        border: "1px solid #FFD5C3",
+                        background: "#fff",
+                        color: "#FF6B35",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      수정
+                    </button>
+                    <button
+                      onClick={() => handleDeleteRow(cf.id)}
+                      style={{
+                        flexShrink: 0,
+                        padding: "8px 12px",
+                        borderRadius: 8,
+                        border: armed ? "none" : "1px solid #FFD6D6",
+                        background: armed ? "#FF4D4F" : "#fff",
+                        color: armed ? "#fff" : "#FF4D4F",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {armed ? "한번 더" : "삭제"}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -229,13 +250,10 @@ export default function CustomFoodsScreen({ onClose }: Props) {
         </div>
       </div>
 
-      {/* 추가 / 편집 시트 (삭제도 여기서) */}
+      {/* 추가 / 편집 시트 (삭제는 목록의 '삭제' 버튼에서) */}
       <BottomSheet
         open={sheetOpen}
-        onClose={() => {
-          setSheetOpen(false);
-          setDeleteArmed(false);
-        }}
+        onClose={() => setSheetOpen(false)}
         header={<BottomSheet.Header>{editingId ? "음식 수정" : "음식 추가"}</BottomSheet.Header>}
         cta={<BottomSheet.CTA onClick={handleSave}>{editingId ? "수정하기" : "추가하기"}</BottomSheet.CTA>}
         hasTextField
@@ -276,25 +294,6 @@ export default function CustomFoodsScreen({ onClose }: Props) {
               ))}
             </div>
           </div>
-
-          {editingId && (
-            <button
-              onClick={handleDelete}
-              style={{
-                width: "100%",
-                padding: 14,
-                borderRadius: 8,
-                border: deleteArmed ? "none" : "1px solid #FFD6D6",
-                background: deleteArmed ? "#FF4D4F" : "#FFF5F5",
-                color: deleteArmed ? "#fff" : "#FF4D4F",
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              {deleteArmed ? "한 번 더 누르면 삭제돼요" : "🗑️ 이 음식 삭제"}
-            </button>
-          )}
         </div>
       </BottomSheet>
     </>
