@@ -3,6 +3,7 @@ import { Top, TextField, FixedBottomCTA, useToast } from "@toss/tds-mobile";
 import { getSettings, saveSettings, getFavorites, saveFavorites } from "../storage";
 import { GOAL_TYPES, PRESET_FOODS } from "../data/foods";
 import FoodIcon from "../components/FoodIcon";
+import CustomFoodsScreen from "./CustomFoodsScreen";
 import type { Settings } from "../types";
 
 const MAX_FAV = 5;
@@ -16,6 +17,7 @@ export default function SettingsScreen({ onDone }: Props) {
   const [weightInput, setWeightInput] = useState("");
   const [goalType, setGoalType] = useState<Settings["goalType"]>("maintain");
   const [favs, setFavs] = useState<string[]>([]);
+  const [showCustomFoods, setShowCustomFoods] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -158,10 +160,37 @@ export default function SettingsScreen({ onDone }: Props) {
         </div>
       )}
 
+      {/* 즐겨 먹는 음식(내 음식) 관리 화면으로 이동 */}
       <div style={{ padding: "0 20px 24px" }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: "#191F28", marginBottom: 4 }}>즐겨 먹는 음식</div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: "#191F28", marginBottom: 12 }}>음식 관리</div>
+        <div
+          onClick={() => setShowCustomFoods(true)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            padding: "16px",
+            borderRadius: 12,
+            background: "#FFF1EA",
+            border: "1px solid #FFD5C3",
+            cursor: "pointer",
+          }}
+        >
+          <span style={{ fontSize: 24 }}>🍱</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#191F28" }}>즐겨 먹는 음식</div>
+            <div style={{ fontSize: 13, color: "#8B95A1", marginTop: 2 }}>
+              내가 자주 먹는 음식을 등록·수정·삭제해요
+            </div>
+          </div>
+          <span style={{ fontSize: 18, color: "#FF6B35", fontWeight: 700 }}>›</span>
+        </div>
+      </div>
+
+      <div style={{ padding: "0 20px 24px" }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: "#191F28", marginBottom: 4 }}>프리셋 즐겨찾기</div>
         <div style={{ fontSize: 13, color: "#8B95A1", marginBottom: 14 }}>
-          최대 {MAX_FAV}개를 고르면 음식 추가 화면 맨 위에 보여드려요. ({favs.length}/{MAX_FAV})
+          기본 제공 음식 중 최대 {MAX_FAV}개를 고르면 음식 추가 화면 맨 위에 보여드려요. ({favs.length}/{MAX_FAV})
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
           {PRESET_FOODS.map((food) => {
@@ -215,6 +244,8 @@ export default function SettingsScreen({ onDone }: Props) {
       </div>
 
       <FixedBottomCTA onClick={handleSave}>저장하기</FixedBottomCTA>
+
+      {showCustomFoods && <CustomFoodsScreen onClose={() => setShowCustomFoods(false)} />}
     </div>
   );
 }
