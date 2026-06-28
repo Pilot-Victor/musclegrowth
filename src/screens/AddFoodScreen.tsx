@@ -80,6 +80,10 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
   const [confirmDelete, setConfirmDelete] = useState<CustomFood | null>(null); // 삭제 확인 대상
   const [limitOpen, setLimitOpen] = useState(false); // 20개 초과 시 삭제 유도
 
+  // BottomSheet를 이 풀스크린 오버레이(zIndex:100) 안으로 포털시켜요.
+  // 기본값(document.body)으로 두면 TDS 시트가 오버레이 뒤에 가려져 안 보여요.
+  const [overlayEl, setOverlayEl] = useState<HTMLDivElement | null>(null);
+
   // 길게 누르기(꾹) 감지
   const pressTimer = useRef<number | null>(null);
   const startPress = (cf: CustomFood) => {
@@ -272,6 +276,7 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
   return (
     <>
       <div
+        ref={setOverlayEl}
         style={{
           position: "fixed",
           inset: 0,
@@ -565,6 +570,7 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
       {/* 용량 입력 BottomSheet */}
       <BottomSheet
         open={gramFood !== null}
+        portalContainer={overlayEl ?? undefined}
         onClose={() => setGramFood(null)}
         header={
           gramFood ? (
@@ -617,6 +623,7 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
       {/* 즐겨먹는 음식 추가 / 편집 BottomSheet */}
       <BottomSheet
         open={foodSheetOpen}
+        portalContainer={overlayEl ?? undefined}
         onClose={() => setFoodSheetOpen(false)}
         header={
           <BottomSheet.Header>{editingId ? "즐겨먹는 음식 수정" : "즐겨먹는 음식 추가"}</BottomSheet.Header>
@@ -666,6 +673,7 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
       {/* 길게 눌러 — 수정 / 삭제 선택 */}
       <BottomSheet
         open={actionTarget !== null}
+        portalContainer={overlayEl ?? undefined}
         onClose={() => setActionTarget(null)}
         header={
           actionTarget ? (
@@ -724,6 +732,7 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
       {/* 삭제 확인 — 예 / 아니오 */}
       <BottomSheet
         open={confirmDelete !== null}
+        portalContainer={overlayEl ?? undefined}
         onClose={() => setConfirmDelete(null)}
         header={<BottomSheet.Header>정말 삭제할까요?</BottomSheet.Header>}
       >
@@ -771,6 +780,7 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
       {/* 20개 초과 — 삭제 유도 */}
       <BottomSheet
         open={limitOpen}
+        portalContainer={overlayEl ?? undefined}
         onClose={() => setLimitOpen(false)}
         header={<BottomSheet.Header>즐겨먹는 음식이 가득 찼어요</BottomSheet.Header>}
       >
