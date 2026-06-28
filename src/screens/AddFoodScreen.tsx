@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Tab, TextField, BottomSheet, useToast } from "@toss/tds-mobile";
 import { fetchAlbumItems } from "@apps-in-toss/web-framework";
 import {
@@ -70,27 +70,16 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
     loadCustomFoods();
   }, []);
 
-  // 즐겨먹는 음식: 추가/편집 시트 · 길게눌러 메뉴 · 삭제 확인 · 20개 제한
+  // 즐겨먹는 음식: 추가/편집 시트 하나로 처리 · 20개 제한
+  // (중간 메뉴/중첩 시트를 없애 단순화 — 카드의 ✏️로 편집 시트를 바로 열고,
+  //  삭제는 그 시트 안에서 2번 탭으로 확인해요.)
   const [foodSheetOpen, setFoodSheetOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newEmoji, setNewEmoji] = useState("");
   const [newName, setNewName] = useState("");
   const [newProtein, setNewProtein] = useState("");
-  const [actionTarget, setActionTarget] = useState<CustomFood | null>(null); // 길게눌러 선택한 음식
-  const [confirmDelete, setConfirmDelete] = useState<CustomFood | null>(null); // 삭제 확인 대상
+  const [deleteArmed, setDeleteArmed] = useState(false); // 편집 시트 내 삭제 2번탭 확인
   const [limitOpen, setLimitOpen] = useState(false); // 20개 초과 시 삭제 유도
-
-  // 길게 누르기(꾹) 감지
-  const pressTimer = useRef<number | null>(null);
-  const startPress = (cf: CustomFood) => {
-    pressTimer.current = window.setTimeout(() => setActionTarget(cf), 450);
-  };
-  const cancelPress = () => {
-    if (pressTimer.current != null) {
-      clearTimeout(pressTimer.current);
-      pressTimer.current = null;
-    }
-  };
 
   const customPresets: PresetFood[] = customFoods.map((cf) => ({
     id: cf.id,
@@ -220,15 +209,17 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
     setNewEmoji("");
     setNewName("");
     setNewProtein("");
+    setDeleteArmed(false);
     setFoodSheetOpen(true);
   };
 
-  // 편집 시트 열기 (기존 값 채움)
+  // 편집 시트 열기 (기존 값 채움) — 카드 ✏️에서 바로 호출해요.
   const openEditSheet = (cf: CustomFood) => {
     setEditingId(cf.id);
     setNewEmoji(cf.emoji);
     setNewName(cf.name);
     setNewProtein(String(cf.protein));
+    setDeleteArmed(false);
     setFoodSheetOpen(true);
   };
 
@@ -261,11 +252,17 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
     loadCustomFoods();
   };
 
-  // 삭제 확정
-  const handleConfirmDelete = async () => {
-    if (!confirmDelete) return;
-    await removeCustomFood(confirmDelete.id);
-    setConfirmDelete(null);
+  // 편집 시트 안에서 삭제 (실수 방지 위해 2번 탭 확인)
+  const handleDeleteFood = async () => {
+    if (!editingId) return;
+    if (!deleteArmed) {
+      setDeleteArmed(true);
+      return;
+    }
+    await removeCustomFood(editingId);
+    toast.openToast("삭제했어요");
+    setFoodSheetOpen(false);
+    setDeleteArmed(false);
     loadCustomFoods();
   };
 
@@ -376,16 +373,6 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
                 return (
                   <div
                     key={food.id}
-                    onPointerDown={
-                      isCustom
-                        ? () => {
-                            const cf = customFoods.find((c) => c.id === food.id);
-                            if (cf) startPress(cf);
-                          }
-                        : undefined
-                    }
-                    onPointerUp={isCustom ? cancelPress : undefined}
-                    onPointerLeave={isCustom ? cancelPress : undefined}
                     style={{
                       position: "relative",
                       background: food.bgColor,
@@ -401,26 +388,28 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
                       <button
                         onClick={() => {
                           const cf = customFoods.find((c) => c.id === food.id);
-                          if (cf) setActionTarget(cf);
+                          if (cf) openEditSheet(cf);
                         }}
-                        aria-label="메뉴 (수정/삭제)"
+                        aria-label="수정 / 삭제"
                         style={{
                           position: "absolute",
-                          top: 2,
+                          top: 4,
                           right: 4,
-                          width: 22,
-                          height: 22,
+                          width: 26,
+                          height: 26,
+                          borderRadius: "50%",
                           border: "none",
-                          background: "transparent",
-                          color: "#8B95A1",
-                          fontSize: 18,
-                          fontWeight: 700,
+                          background: "rgba(255,255,255,0.85)",
+                          fontSize: 13,
                           cursor: "pointer",
                           padding: 0,
                           lineHeight: 1,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
                         }}
                       >
-                        ⋮
+                        ✏️
                       </button>
                     )}
                     <FoodIcon emoji={food.emoji} image={food.image} size={28} />
@@ -614,10 +603,13 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
         </div>
       </BottomSheet>
 
-      {/* 즐겨먹는 음식 추가 / 편집 BottomSheet */}
+      {/* 즐겨먹는 음식 추가 / 편집 BottomSheet (수정·삭제를 여기 하나로 처리) */}
       <BottomSheet
         open={foodSheetOpen}
-        onClose={() => setFoodSheetOpen(false)}
+        onClose={() => {
+          setFoodSheetOpen(false);
+          setDeleteArmed(false);
+        }}
         header={
           <BottomSheet.Header>{editingId ? "즐겨먹는 음식 수정" : "즐겨먹는 음식 추가"}</BottomSheet.Header>
         }
@@ -660,111 +652,26 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
               ))}
             </div>
           </div>
-        </div>
-      </BottomSheet>
 
-      {/* 길게 눌러 — 수정 / 삭제 선택 */}
-      <BottomSheet
-        open={actionTarget !== null}
-        onClose={() => setActionTarget(null)}
-        header={
-          actionTarget ? (
-            <BottomSheet.Header>
-              {actionTarget.emoji} {actionTarget.name}
-            </BottomSheet.Header>
-          ) : undefined
-        }
-      >
-        <div style={{ padding: "4px 24px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
-          <button
-            onClick={() => {
-              const cf = actionTarget;
-              setActionTarget(null);
-              // 현재 시트가 닫힌 뒤 편집 시트를 열어요(두 시트가 겹치면 안 떠요).
-              if (cf) setTimeout(() => openEditSheet(cf), 250);
-            }}
-            style={{
-              width: "100%",
-              padding: 16,
-              borderRadius: 8,
-              border: "none",
-              background: "#FF6B35",
-              color: "#fff",
-              fontSize: 15,
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
-          >
-            ✏️ 수정하기
-          </button>
-          <button
-            onClick={() => {
-              const cf = actionTarget;
-              setActionTarget(null);
-              // 현재 시트가 닫힌 뒤 삭제 확인 시트를 열어요(겹침 방지).
-              if (cf) setTimeout(() => setConfirmDelete(cf), 250);
-            }}
-            style={{
-              width: "100%",
-              padding: 16,
-              borderRadius: 8,
-              border: "1px solid #E5E8EB",
-              background: "#fff",
-              color: "#FF4D4F",
-              fontSize: 15,
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
-          >
-            🗑️ 삭제하기
-          </button>
-        </div>
-      </BottomSheet>
-
-      {/* 삭제 확인 — 예 / 아니오 */}
-      <BottomSheet
-        open={confirmDelete !== null}
-        onClose={() => setConfirmDelete(null)}
-        header={<BottomSheet.Header>정말 삭제할까요?</BottomSheet.Header>}
-      >
-        <div style={{ padding: "0 24px 24px" }}>
-          <div style={{ fontSize: 14, color: "#8B95A1", marginBottom: 16 }}>
-            "{confirmDelete?.name}" 을(를) 즐겨먹는 음식에서 삭제해요.
-          </div>
-          <div style={{ display: "flex", gap: 10 }}>
+          {/* 편집 중일 때만 — 같은 시트 안에서 삭제 (2번 탭 확인) */}
+          {editingId && (
             <button
-              onClick={() => setConfirmDelete(null)}
+              onClick={handleDeleteFood}
               style={{
-                flex: 1,
-                padding: 16,
+                width: "100%",
+                padding: 14,
                 borderRadius: 8,
-                border: "1px solid #E5E8EB",
-                background: "#fff",
-                color: "#191F28",
-                fontSize: 15,
+                border: deleteArmed ? "none" : "1px solid #FFD6D6",
+                background: deleteArmed ? "#FF4D4F" : "#FFF5F5",
+                color: deleteArmed ? "#fff" : "#FF4D4F",
+                fontSize: 14,
                 fontWeight: 700,
                 cursor: "pointer",
               }}
             >
-              아니오
+              {deleteArmed ? "한 번 더 누르면 삭제돼요" : "🗑️ 이 음식 삭제"}
             </button>
-            <button
-              onClick={handleConfirmDelete}
-              style={{
-                flex: 1,
-                padding: 16,
-                borderRadius: 8,
-                border: "none",
-                background: "#FF4D4F",
-                color: "#fff",
-                fontSize: 15,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              예
-            </button>
-          </div>
+          )}
         </div>
       </BottomSheet>
 
@@ -795,7 +702,11 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
                 <div style={{ fontSize: 12, color: "#8B95A1" }}>1개당 {cf.protein}g</div>
               </div>
               <button
-                onClick={() => setConfirmDelete(cf)}
+                onClick={async () => {
+                  await removeCustomFood(cf.id);
+                  toast.openToast("삭제했어요");
+                  loadCustomFoods();
+                }}
                 style={{
                   padding: "8px 14px",
                   borderRadius: 8,
