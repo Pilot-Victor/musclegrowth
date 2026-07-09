@@ -5,7 +5,7 @@ export default defineConfig({
   brand: {
     displayName: "근성장",
     primaryColor: "#FF6B35",
-    icon: "/icon.png",
+    icon: "https://static.toss.im/appsintoss/44827/16c7d6b9-5853-4bf9-b829-b9035867752b.png",
   },
   web: {
     host: "localhost",
