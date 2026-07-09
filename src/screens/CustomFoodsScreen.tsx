@@ -16,13 +16,23 @@ import { useBackHandler } from "../hooks/useBackHandler";
 import type { CustomFood } from "../types";
 import type { PresetFood } from "../data/foods";
 
-const BUILD = "b250709-merge";
+const BUILD = "b250709-icons";
 
+// 빠른 선택용 이모지 (원하는 이모지가 없으면 아래 '직접 입력'으로 아무 이모지나 사용 가능)
 const FOOD_EMOJIS = [
-  "🍗", "🥩", "🍖", "🍤", "🐟", "🦐",
-  "🥚", "🥛", "🧀", "🍚", "🍞", "🥜",
-  "🫘", "🥦", "🍌", "🥗", "🍣", "🍱",
-  "🥪", "🌭", "🍫", "💪", "🥤", "🍳",
+  "🍗", "🍖", "🥩", "🥓", "🍤", "🦐",
+  "🦑", "🦀", "🐟", "🐠", "🍣", "🍱",
+  "🍙", "🍚", "🍜", "🍲", "🥘", "🍝",
+  "🌮", "🌯", "🥙", "🧆", "🥪", "🍔",
+  "🍕", "🌭", "🥨", "🥐", "🍞", "🥖",
+  "🧇", "🥞", "🧈", "🥚", "🍳", "🧀",
+  "🥛", "🥜", "🌰", "🫘", "🥦", "🥬",
+  "🥕", "🌽", "🍅", "🥑", "🍠", "🥔",
+  "🍌", "🍎", "🍊", "🍇", "🍓", "🫐",
+  "🍑", "🥝", "🍍", "🥭", "🍉", "🥥",
+  "🍫", "🍩", "🍪", "🎂", "🧁", "🍦",
+  "🍯", "☕", "🍵", "🧃", "🥤", "🧋",
+  "🍺", "💪", "🔥", "⭐", "🍽️", "🥗",
 ];
 
 // 프리셋과 내 음식을 한 목록에서 관리하기 위한 통합 항목
@@ -272,8 +282,29 @@ export default function CustomFoodsScreen({ onClose }: Props) {
               onChange={(e) => setProtein(e.target.value)}
             />
             <div>
-              <div style={{ fontSize: 13, color: "#6B7684", marginBottom: 8 }}>아이콘 선택</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "#6B7684",
+                  marginBottom: 8,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                아이콘 선택
+                <span style={{ fontSize: 20 }}>{emoji || "🍽️"}</span>
+                <span style={{ color: "#B0B8C1" }}>현재 아이콘</span>
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(6, 1fr)",
+                  gap: 8,
+                  maxHeight: 210,
+                  overflowY: "auto",
+                }}
+              >
                 {FOOD_EMOJIS.map((em) => (
                   <button
                     key={em}
@@ -290,6 +321,15 @@ export default function CustomFoodsScreen({ onClose }: Props) {
                     {em}
                   </button>
                 ))}
+              </div>
+              <div style={{ marginTop: 10 }}>
+                <TextField
+                  variant="box"
+                  label="직접 입력 (아무 이모지나)"
+                  placeholder="예: 🍗 (이모지 키보드로 입력)"
+                  value={emoji}
+                  onChange={(e) => setEmoji(e.target.value)}
+                />
               </div>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
