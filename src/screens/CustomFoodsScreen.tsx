@@ -16,8 +16,6 @@ import { useBackHandler } from "../hooks/useBackHandler";
 import type { CustomFood } from "../types";
 import type { PresetFood } from "../data/foods";
 
-const BUILD = "b250709-icons";
-
 // 빠른 선택용 이모지 (원하는 이모지가 없으면 아래 '직접 입력'으로 아무 이모지나 사용 가능)
 const FOOD_EMOJIS = [
   "🍗", "🍖", "🥩", "🥓", "🍤", "🦐",
@@ -242,7 +240,6 @@ export default function CustomFoodsScreen({ onClose }: Props) {
           ←
         </button>
         <span style={{ fontSize: 18, fontWeight: 700, color: "#191F28" }}>즐겨 먹는 음식</span>
-        <span style={{ marginLeft: "auto", fontSize: 10, color: "#C4C9D0" }}>{BUILD}</span>
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px 40px" }}>
