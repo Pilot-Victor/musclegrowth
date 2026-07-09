@@ -3,7 +3,7 @@ import { defineConfig } from "@apps-in-toss/web-framework/config";
 export default defineConfig({
   appName: "musclegrowth",
   brand: {
-    displayName: "단백질 트래커",
+    displayName: "근성장",
     primaryColor: "#FF6B35",
     icon: "/icon.png",
   },
