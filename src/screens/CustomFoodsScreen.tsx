@@ -6,14 +6,18 @@ import {
   updateCustomFood,
   removeCustomFood,
   MAX_CUSTOM_FOODS,
+  getEffectivePresets,
+  setPresetOverride,
+  hidePreset,
+  restorePresets,
+  hasPresetEdits,
 } from "../storage";
 import { useBackHandler } from "../hooks/useBackHandler";
 import type { CustomFood } from "../types";
+import type { PresetFood } from "../data/foods";
 
-// 배포가 최신인지 화면에서 바로 확인하기 위한 빌드 표식.
-const BUILD = "b250709-inline";
+const BUILD = "b250709-merge";
 
-// 아이콘 선택용 이모지 목록
 const FOOD_EMOJIS = [
   "🍗", "🥩", "🍖", "🍤", "🐟", "🦐",
   "🥚", "🥛", "🧀", "🍚", "🍞", "🥜",
@@ -21,63 +25,118 @@ const FOOD_EMOJIS = [
   "🥪", "🌭", "🍫", "💪", "🥤", "🍳",
 ];
 
+// 프리셋과 내 음식을 한 목록에서 관리하기 위한 통합 항목
+interface Item {
+  key: string;
+  kind: "custom" | "preset";
+  id: string;
+  name: string;
+  protein: number;
+  emoji: string;
+  serving: string; // "1개" | "100g" 등
+}
+
 interface Props {
   onClose: () => void;
 }
 
 /**
  * 설정 → '즐겨 먹는 음식' 관리 화면.
- * 추가/수정/삭제를 모두 이 화면 안에서 인라인으로 처리해요.
- * (BottomSheet 없이 일반 폼만 사용 — 토스 WebView에서 가장 안정적)
+ * 프리셋(기본 제공)과 내 음식(직접 등록)을 한 화면에서 모두 수정/삭제해요.
+ * - 프리셋 수정 = 오버라이드 저장, 삭제 = 숨김 (기본값 복원 가능)
+ * - 내 음식 = 추가/수정/삭제
  */
 export default function CustomFoodsScreen({ onClose }: Props) {
-  const [foods, setFoods] = useState<CustomFood[]>([]);
-  const load = () => getCustomFoods().then(setFoods);
+  const [customFoods, setCustomFoods] = useState<CustomFood[]>([]);
+  const [presets, setPresets] = useState<PresetFood[]>([]);
+  const [edited, setEdited] = useState(false);
+
+  const load = async () => {
+    const [cf, pf, ed] = await Promise.all([
+      getCustomFoods(),
+      getEffectivePresets(),
+      hasPresetEdits(),
+    ]);
+    setCustomFoods(cf);
+    setPresets(pf);
+    setEdited(ed);
+  };
   useEffect(() => {
     load();
   }, []);
 
   const [adding, setAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editKey, setEditKey] = useState<string | null>(null);
+  const [editKind, setEditKind] = useState<"custom" | "preset">("custom");
+  const [editId, setEditId] = useState<string>("");
+  const [editServing, setEditServing] = useState("1개");
   const [name, setName] = useState("");
   const [protein, setProtein] = useState("");
   const [emoji, setEmoji] = useState("");
-  const [deleteArmedId, setDeleteArmedId] = useState<string | null>(null);
+  const [deleteArmedKey, setDeleteArmedKey] = useState<string | null>(null);
+  const [restoreArmed, setRestoreArmed] = useState(false);
   const toast = useToast();
 
-  const formOpen = adding || editingId !== null;
+  const formOpen = adding || editKey !== null;
 
-  // 뒤로가기: 폼이 열려 있으면 폼만 닫고, 아니면 화면을 닫아요.
   useBackHandler(true, () => (formOpen ? closeForm() : onClose()));
+
+  const items: Item[] = [
+    ...customFoods.map((cf) => ({
+      key: `c_${cf.id}`,
+      kind: "custom" as const,
+      id: cf.id,
+      name: cf.name,
+      protein: cf.protein,
+      emoji: cf.emoji,
+      serving: "1개",
+    })),
+    ...presets.map((p) => ({
+      key: `p_${p.id}`,
+      kind: "preset" as const,
+      id: p.id,
+      name: p.name,
+      protein: p.protein,
+      emoji: p.emoji,
+      serving: p.serving,
+    })),
+  ];
 
   const closeForm = () => {
     setAdding(false);
-    setEditingId(null);
+    setEditKey(null);
     setName("");
     setProtein("");
     setEmoji("");
   };
 
   const openAdd = () => {
-    if (foods.length >= MAX_CUSTOM_FOODS) {
-      toast.openToast(`최대 ${MAX_CUSTOM_FOODS}개까지 등록할 수 있어요`);
+    if (customFoods.length >= MAX_CUSTOM_FOODS) {
+      toast.openToast(`내 음식은 최대 ${MAX_CUSTOM_FOODS}개까지 등록할 수 있어요`);
       return;
     }
-    setDeleteArmedId(null);
-    setEditingId(null);
+    setDeleteArmedKey(null);
+    setRestoreArmed(false);
+    setEditKey(null);
+    setEditKind("custom");
+    setEditServing("1개");
     setName("");
     setProtein("");
     setEmoji("");
     setAdding(true);
   };
 
-  const openEdit = (cf: CustomFood) => {
-    setDeleteArmedId(null);
+  const openEdit = (item: Item) => {
+    setDeleteArmedKey(null);
+    setRestoreArmed(false);
     setAdding(false);
-    setEditingId(cf.id);
-    setName(cf.name);
-    setProtein(String(cf.protein));
-    setEmoji(cf.emoji);
+    setEditKey(item.key);
+    setEditKind(item.kind);
+    setEditId(item.id);
+    setEditServing(item.serving);
+    setName(item.name);
+    setProtein(String(item.protein));
+    setEmoji(item.emoji);
   };
 
   const handleSave = async () => {
@@ -92,10 +151,7 @@ export default function CustomFoodsScreen({ onClose }: Props) {
       return;
     }
     const em = emoji.trim() || "🍽️";
-    if (editingId) {
-      await updateCustomFood({ id: editingId, name: nm, protein: pr, emoji: em });
-      toast.openToast("수정했어요 ✓");
-    } else {
+    if (adding) {
       await addCustomFood({
         id: `cf_${Date.now()}_${Math.random().toString(36).slice(2)}`,
         name: nm,
@@ -103,19 +159,40 @@ export default function CustomFoodsScreen({ onClose }: Props) {
         emoji: em,
       });
       toast.openToast(`${em} ${nm} 등록했어요`);
+    } else if (editKind === "custom") {
+      await updateCustomFood({ id: editId, name: nm, protein: pr, emoji: em });
+      toast.openToast("수정했어요 ✓");
+    } else {
+      await setPresetOverride(editId, { name: nm, protein: pr, emoji: em });
+      toast.openToast("수정했어요 ✓");
     }
     closeForm();
     await load();
   };
 
-  const handleDeleteRow = async (id: string) => {
-    if (deleteArmedId !== id) {
-      setDeleteArmedId(id);
+  const handleDelete = async (item: Item) => {
+    if (deleteArmedKey !== item.key) {
+      setDeleteArmedKey(item.key);
       return;
     }
-    await removeCustomFood(id);
+    if (item.kind === "custom") {
+      await removeCustomFood(item.id);
+    } else {
+      await hidePreset(item.id);
+    }
     toast.openToast("삭제했어요");
-    setDeleteArmedId(null);
+    setDeleteArmedKey(null);
+    await load();
+  };
+
+  const handleRestore = async () => {
+    if (!restoreArmed) {
+      setRestoreArmed(true);
+      return;
+    }
+    await restorePresets();
+    toast.openToast("기본 음식을 되돌렸어요");
+    setRestoreArmed(false);
     await load();
   };
 
@@ -158,12 +235,9 @@ export default function CustomFoodsScreen({ onClose }: Props) {
         <span style={{ marginLeft: "auto", fontSize: 10, color: "#C4C9D0" }}>{BUILD}</span>
       </div>
 
-      {/* 본문 */}
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px 40px" }}>
         <div style={{ fontSize: 13, color: "#8B95A1", marginBottom: 16, lineHeight: 1.5 }}>
-          자주 먹는 음식을 등록하면 음식 추가 화면에서 바로 기록할 수 있어요.
-          <br />
-          등록 {foods.length} / {MAX_CUSTOM_FOODS}개
+          음식 추가 화면에 나오는 음식이에요. 기본 음식도 값을 바꾸거나 삭제할 수 있어요.
         </div>
 
         {/* 인라인 추가/편집 폼 */}
@@ -181,7 +255,7 @@ export default function CustomFoodsScreen({ onClose }: Props) {
             }}
           >
             <div style={{ fontSize: 15, fontWeight: 700, color: "#191F28" }}>
-              {editingId ? "음식 수정" : "새 음식 추가"}
+              {adding ? "새 음식 추가" : "음식 수정"}
             </div>
             <TextField
               variant="box"
@@ -192,7 +266,7 @@ export default function CustomFoodsScreen({ onClose }: Props) {
             />
             <TextField
               variant="box"
-              label="1개당 단백질 (g)"
+              label={`${editServing}당 단백질 (g)`}
               placeholder="예: 12"
               value={protein}
               onChange={(e) => setProtein(e.target.value)}
@@ -249,82 +323,76 @@ export default function CustomFoodsScreen({ onClose }: Props) {
                   cursor: "pointer",
                 }}
               >
-                {editingId ? "수정 저장" : "추가하기"}
+                {adding ? "추가하기" : "수정 저장"}
               </button>
             </div>
           </div>
         )}
 
-        {/* 목록 */}
-        {foods.length === 0 && !formOpen ? (
-          <div style={{ padding: "40px 0", textAlign: "center", color: "#B0B8C1", fontSize: 14 }}>
-            아직 등록한 음식이 없어요.
-            <br />
-            아래 버튼으로 추가해 보세요.
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {foods.map((cf) => {
-              const armed = deleteArmedId === cf.id;
-              const isEditing = editingId === cf.id;
-              return (
-                <div
-                  key={cf.id}
+        {/* 통합 목록 */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {items.map((item) => {
+            const armed = deleteArmedKey === item.key;
+            const isEditing = editKey === item.key;
+            return (
+              <div
+                key={item.key}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "12px 14px",
+                  borderRadius: 12,
+                  background: isEditing ? "#FFF1EA" : "#FAFAFB",
+                  border: `1px solid ${isEditing ? "#FFD5C3" : "#F2F4F6"}`,
+                }}
+              >
+                <span style={{ fontSize: 26 }}>{item.emoji}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: "#191F28" }}>{item.name}</div>
+                  <div style={{ fontSize: 12, color: "#8B95A1", marginTop: 2 }}>
+                    {item.serving}당 {item.protein}g
+                  </div>
+                </div>
+                <button
+                  onClick={() => openEdit(item)}
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "12px 14px",
-                    borderRadius: 12,
-                    background: isEditing ? "#FFF1EA" : "#FAFAFB",
-                    border: `1px solid ${isEditing ? "#FFD5C3" : "#F2F4F6"}`,
+                    flexShrink: 0,
+                    padding: "8px 14px",
+                    borderRadius: 8,
+                    border: "1px solid #FFD5C3",
+                    background: "#fff",
+                    color: "#FF6B35",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
                   }}
                 >
-                  <span style={{ fontSize: 26 }}>{cf.emoji}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: "#191F28" }}>{cf.name}</div>
-                    <div style={{ fontSize: 12, color: "#8B95A1", marginTop: 2 }}>1개당 {cf.protein}g</div>
-                  </div>
-                  <button
-                    onClick={() => openEdit(cf)}
-                    style={{
-                      flexShrink: 0,
-                      padding: "8px 14px",
-                      borderRadius: 8,
-                      border: "1px solid #FFD5C3",
-                      background: "#fff",
-                      color: "#FF6B35",
-                      fontSize: 13,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                    }}
-                  >
-                    수정
-                  </button>
-                  <button
-                    onClick={() => handleDeleteRow(cf.id)}
-                    style={{
-                      flexShrink: 0,
-                      padding: "8px 12px",
-                      borderRadius: 8,
-                      border: armed ? "none" : "1px solid #FFD6D6",
-                      background: armed ? "#FF4D4F" : "#fff",
-                      color: armed ? "#fff" : "#FF4D4F",
-                      fontSize: 13,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {armed ? "한번 더" : "삭제"}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                  수정
+                </button>
+                <button
+                  onClick={() => handleDelete(item)}
+                  style={{
+                    flexShrink: 0,
+                    padding: "8px 12px",
+                    borderRadius: 8,
+                    border: armed ? "none" : "1px solid #FFD6D6",
+                    background: armed ? "#FF4D4F" : "#fff",
+                    color: armed ? "#fff" : "#FF4D4F",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {armed ? "한번 더" : "삭제"}
+                </button>
+              </div>
+            );
+          })}
+        </div>
 
-        {/* 추가 버튼 (폼이 닫혀 있을 때만) */}
+        {/* 내 음식 추가 */}
         {!formOpen && (
           <button
             onClick={openAdd}
@@ -341,7 +409,28 @@ export default function CustomFoodsScreen({ onClose }: Props) {
               cursor: "pointer",
             }}
           >
-            ＋ 즐겨 먹는 음식 추가
+            ＋ 내 음식 추가
+          </button>
+        )}
+
+        {/* 기본값 복원 (프리셋을 수정/삭제한 적이 있을 때만) */}
+        {!formOpen && edited && (
+          <button
+            onClick={handleRestore}
+            style={{
+              marginTop: 10,
+              width: "100%",
+              padding: "12px",
+              borderRadius: 12,
+              border: "none",
+              background: restoreArmed ? "#4E5968" : "#F2F4F6",
+              color: restoreArmed ? "#fff" : "#6B7684",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            {restoreArmed ? "한 번 더 누르면 기본 음식으로 되돌려요" : "기본 음식 되돌리기 (수정/삭제 초기화)"}
           </button>
         )}
       </div>

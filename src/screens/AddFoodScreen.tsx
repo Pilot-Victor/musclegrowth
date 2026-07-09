@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { Tab, TextField, BottomSheet, useToast } from "@toss/tds-mobile";
 import { fetchAlbumItems } from "@apps-in-toss/web-framework";
-import { addFoodEntry, getFavorites, getCustomFoods } from "../storage";
+import { addFoodEntry, getFavorites, getCustomFoods, getEffectivePresets } from "../storage";
 import { useBackHandler } from "../hooks/useBackHandler";
-import { PRESET_FOODS } from "../data/foods";
 import FoodIcon from "../components/FoodIcon";
 import type { PresetFood } from "../data/foods";
 import type { FoodEntry, CustomFood } from "../types";
@@ -47,6 +46,12 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
     getFavorites().then(setFavorites);
   }, []);
 
+  // 프리셋 목록 — 설정에서 수정/삭제한 내용이 반영된 실제 목록이에요.
+  const [presets, setPresets] = useState<PresetFood[]>([]);
+  useEffect(() => {
+    getEffectivePresets().then(setPresets);
+  }, []);
+
   // 내 음식(사용자 등록) — 프리셋 맨 앞에 단위(개) 음식으로 노출
   const [customFoods, setCustomFoods] = useState<CustomFood[]>([]);
   const loadCustomFoods = () => getCustomFoods().then(setCustomFoods);
@@ -68,9 +73,9 @@ export default function AddFoodScreen({ onClose, onAdded, date, dateLabel }: Pro
   const orderedFoods = [
     ...customPresets,
     ...favorites
-      .map((id) => PRESET_FOODS.find((f) => f.id === id))
+      .map((id) => presets.find((f) => f.id === id))
       .filter((f): f is PresetFood => Boolean(f)),
-    ...PRESET_FOODS.filter((f) => !favorites.includes(f.id)),
+    ...presets.filter((f) => !favorites.includes(f.id)),
   ];
 
   const toast = useToast();

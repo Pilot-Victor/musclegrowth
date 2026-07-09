@@ -1,12 +1,9 @@
 import { useState, useEffect } from "react";
-import { Top, TextField, FixedBottomCTA, useToast } from "@toss/tds-mobile";
-import { getSettings, saveSettings, getFavorites, saveFavorites } from "../storage";
-import { GOAL_TYPES, PRESET_FOODS } from "../data/foods";
-import FoodIcon from "../components/FoodIcon";
+import { TextField, FixedBottomCTA, useToast } from "@toss/tds-mobile";
+import { getSettings, saveSettings } from "../storage";
+import { GOAL_TYPES } from "../data/foods";
 import CustomFoodsScreen from "./CustomFoodsScreen";
 import type { Settings } from "../types";
-
-const MAX_FAV = 5;
 
 interface Props {
   /** 저장/뒤로가기 시 메인(홈) 화면으로 돌아가요. */
@@ -16,7 +13,6 @@ interface Props {
 export default function SettingsScreen({ onDone }: Props) {
   const [weightInput, setWeightInput] = useState("");
   const [goalType, setGoalType] = useState<Settings["goalType"]>("maintain");
-  const [favs, setFavs] = useState<string[]>([]);
   const [showCustomFoods, setShowCustomFoods] = useState(false);
   const toast = useToast();
 
@@ -25,13 +21,7 @@ export default function SettingsScreen({ onDone }: Props) {
       setWeightInput(String(s.weight));
       setGoalType(s.goalType);
     });
-    getFavorites().then(setFavs);
   }, []);
-
-  const toggleFav = (id: string) =>
-    setFavs((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : prev.length >= MAX_FAV ? prev : [...prev, id],
-    );
 
   const selectedGoal = GOAL_TYPES.find((g) => g.id === goalType)!;
   const weight = parseFloat(weightInput);
@@ -47,16 +37,30 @@ export default function SettingsScreen({ onDone }: Props) {
       return;
     }
     await saveSettings({ weight, goalType });
-    await saveFavorites(favs);
     toast.openToast("저장했어요 ✓");
     onDone();
   };
 
   return (
     <div style={{ paddingBottom: "calc(100px + env(safe-area-inset-bottom))" }}>
-      <Top
-        title={<Top.TitleParagraph size={22}>설정</Top.TitleParagraph>}
-      />
+      <div style={{ display: "flex", alignItems: "center", padding: "16px 20px 8px" }}>
+        <button
+          onClick={onDone}
+          aria-label="뒤로"
+          style={{
+            background: "none",
+            border: "none",
+            fontSize: 24,
+            cursor: "pointer",
+            padding: 0,
+            marginRight: 12,
+            color: "#191F28",
+          }}
+        >
+          ←
+        </button>
+        <span style={{ fontSize: 22, fontWeight: 800, color: "#191F28" }}>설정</span>
+      </div>
 
       <div style={{ padding: "0 20px 24px" }}>
         <div style={{ fontSize: 15, fontWeight: 600, color: "#191F28", marginBottom: 12 }}>
@@ -184,62 +188,6 @@ export default function SettingsScreen({ onDone }: Props) {
             </div>
           </div>
           <span style={{ fontSize: 18, color: "#FF6B35", fontWeight: 700 }}>›</span>
-        </div>
-      </div>
-
-      <div style={{ padding: "0 20px 24px" }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: "#191F28", marginBottom: 4 }}>프리셋 즐겨찾기</div>
-        <div style={{ fontSize: 13, color: "#8B95A1", marginBottom: 14 }}>
-          기본 제공 음식 중 최대 {MAX_FAV}개를 고르면 음식 추가 화면 맨 위에 보여드려요. ({favs.length}/{MAX_FAV})
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-          {PRESET_FOODS.map((food) => {
-            const sel = favs.includes(food.id);
-            return (
-              <div
-                key={food.id}
-                onClick={() => toggleFav(food.id)}
-                style={{
-                  position: "relative",
-                  background: sel ? food.bgColor : "#FAFAFB",
-                  border: `2px solid ${sel ? food.color : "#F2F4F6"}`,
-                  borderRadius: 8,
-                  padding: "14px 6px",
-                  cursor: "pointer",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 5,
-                  userSelect: "none",
-                }}
-              >
-                {sel && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 6,
-                      right: 6,
-                      width: 18,
-                      height: 18,
-                      borderRadius: "50%",
-                      background: food.color,
-                      color: "#fff",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    ✓
-                  </div>
-                )}
-                <FoodIcon emoji={food.emoji} image={food.image} size={26} />
-                <span style={{ fontSize: 12, fontWeight: 600, color: "#191F28" }}>{food.name}</span>
-                <span style={{ fontSize: 11, color: "#8B95A1" }}>{food.protein}g</span>
-              </div>
-            );
-          })}
         </div>
       </div>
 

@@ -1,10 +1,14 @@
 import { Storage } from "@apps-in-toss/web-framework";
 import type { FoodEntry, Settings, DayHistory, CustomFood } from "./types";
+import { PRESET_FOODS } from "./data/foods";
+import type { PresetFood } from "./data/foods";
 
 const KEY_SETTINGS = "protein_settings";
 const KEY_ONBOARDED = "protein_onboarded";
 const KEY_FAVORITES = "protein_favorites";
 const KEY_CUSTOM_FOODS = "protein_custom_foods";
+const KEY_PRESET_OVERRIDES = "protein_preset_overrides";
+const KEY_PRESET_HIDDEN = "protein_preset_hidden";
 const keyForDate = (date: string) => `protein_entries_${date}`;
 
 // ---------------------------------------------------------------------------
@@ -170,6 +174,78 @@ export async function removeCustomFood(id: string): Promise<void> {
 
 // 즐겨먹는 음식 최대 개수
 export const MAX_CUSTOM_FOODS = 20;
+
+// ---------------------------------------------------------------------------
+// 프리셋(기본 제공 음식) 사용자 편집
+// 프리셋은 코드에 내장돼 있어 직접 바꿀 수 없으므로, 사용자의 수정값은
+// '오버라이드'로, 삭제는 '숨김 목록'으로 저장해요. '기본값 복원'으로 초기화해요.
+// ---------------------------------------------------------------------------
+export interface PresetOverride {
+  name?: string;
+  protein?: number;
+  emoji?: string;
+}
+
+export async function getPresetOverrides(): Promise<Record<string, PresetOverride>> {
+  const raw = await getItem(KEY_PRESET_OVERRIDES);
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw) as Record<string, PresetOverride>;
+  } catch {
+    return {};
+  }
+}
+
+export async function setPresetOverride(id: string, ov: PresetOverride): Promise<void> {
+  const all = await getPresetOverrides();
+  all[id] = { ...all[id], ...ov };
+  await setItem(KEY_PRESET_OVERRIDES, JSON.stringify(all));
+}
+
+export async function getPresetHidden(): Promise<string[]> {
+  const raw = await getItem(KEY_PRESET_HIDDEN);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as string[];
+  } catch {
+    return [];
+  }
+}
+
+export async function hidePreset(id: string): Promise<void> {
+  const hidden = await getPresetHidden();
+  if (!hidden.includes(id)) {
+    hidden.push(id);
+    await setItem(KEY_PRESET_HIDDEN, JSON.stringify(hidden));
+  }
+}
+
+// 프리셋 수정/삭제를 모두 초기화해 기본값으로 되돌려요.
+export async function restorePresets(): Promise<void> {
+  await setItem(KEY_PRESET_OVERRIDES, JSON.stringify({}));
+  await setItem(KEY_PRESET_HIDDEN, JSON.stringify([]));
+}
+
+// 사용자 수정(오버라이드)과 삭제(숨김)를 반영한 실제 프리셋 목록이에요.
+export async function getEffectivePresets(): Promise<PresetFood[]> {
+  const [overrides, hidden] = await Promise.all([getPresetOverrides(), getPresetHidden()]);
+  return PRESET_FOODS.filter((f) => !hidden.includes(f.id)).map((f) => {
+    const ov = overrides[f.id];
+    if (!ov) return f;
+    return {
+      ...f,
+      name: ov.name ?? f.name,
+      protein: ov.protein ?? f.protein,
+      emoji: ov.emoji ?? f.emoji,
+    };
+  });
+}
+
+// 프리셋이 하나라도 수정/삭제됐는지 (‘기본값 복원’ 버튼 노출용)
+export async function hasPresetEdits(): Promise<boolean> {
+  const [overrides, hidden] = await Promise.all([getPresetOverrides(), getPresetHidden()]);
+  return hidden.length > 0 || Object.keys(overrides).length > 0;
+}
 
 export async function getHistory(days: number): Promise<DayHistory[]> {
   const result: DayHistory[] = [];
