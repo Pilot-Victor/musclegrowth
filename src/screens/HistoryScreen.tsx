@@ -54,10 +54,12 @@ export default function HistoryScreen() {
     return `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   }
 
-  function getCellEmoji(day: number): string | null {
+  // 달력 칸에 표시할 진행률(섭취/목표)과 달성 여부. 기록 없으면 null.
+  function getCellProgress(day: number): { pct: number; achieved: boolean } | null {
     const entry = historyMap.get(cellDate(day));
     if (!entry || entry.totalProtein === 0) return null;
-    return entry.totalProtein >= goal ? "💪" : "🦴";
+    const ratio = goal > 0 ? entry.totalProtein / goal : 0;
+    return { pct: Math.min(Math.max(ratio, 0), 1) * 100, achieved: entry.totalProtein >= goal };
   }
 
   const handleDelete = async (id: string, date: string) => {
@@ -142,9 +144,10 @@ export default function HistoryScreen() {
             <div key={`empty-${i}`} />
           ))}
           {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
-            const emoji = getCellEmoji(day);
+            const prog = getCellProgress(day);
             const isToday =
               new Date().getFullYear() === calYear && new Date().getMonth() === calMonth && new Date().getDate() === day;
+            const cellBg = isToday ? "#FFF1EA" : "#F9FAFB";
             return (
               <button
                 key={day}
@@ -153,28 +156,94 @@ export default function HistoryScreen() {
                   aspectRatio: "1",
                   borderRadius: 8,
                   border: isToday ? "2px solid #FF6B35" : "none",
-                  background: isToday ? "#FFF1EA" : "#F9FAFB",
+                  background: cellBg,
                   cursor: "pointer",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
                   padding: 2,
-                  gap: 1,
+                  gap: 2,
                 }}
               >
                 <span style={{ fontSize: 11, color: isToday ? "#FF6B35" : "#6B7684", fontWeight: isToday ? 700 : 400 }}>
                   {day}
                 </span>
-                {emoji && <span style={{ fontSize: 12 }}>{emoji}</span>}
+                {prog ? (
+                  // 진행 링: 섭취/목표만큼 채워진 도넛. 달성하면 중앙에 ✓.
+                  <div
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: "50%",
+                      background: `conic-gradient(#FF6B35 ${prog.pct}%, #E9ECEF ${prog.pct}%)`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 14,
+                        height: 14,
+                        borderRadius: "50%",
+                        background: cellBg,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 9,
+                        lineHeight: 1,
+                        fontWeight: 800,
+                        color: "#FF6B35",
+                      }}
+                    >
+                      {prog.achieved ? "✓" : ""}
+                    </div>
+                  </div>
+                ) : (
+                  // 기록 없는 날: 빈 회색 링
+                  <div
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: "50%",
+                      border: "2px solid #EDF0F2",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                )}
               </button>
             );
           })}
         </div>
 
-        <div style={{ display: "flex", gap: 16, marginTop: 12 }}>
-          <div style={{ fontSize: 12, color: "#6B7684" }}>💪 목표 달성</div>
-          <div style={{ fontSize: 12, color: "#6B7684" }}>🦴 미달성</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 14, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#6B7684" }}>
+            <div
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: "50%",
+                background: "conic-gradient(#FF6B35 100%, #E9ECEF 0)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#fff", fontSize: 7, fontWeight: 800, color: "#FF6B35", display: "flex", alignItems: "center", justifyContent: "center" }}>✓</div>
+            </div>
+            목표 달성
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#6B7684" }}>
+            <div style={{ width: 16, height: 16, borderRadius: "50%", background: "conic-gradient(#FF6B35 60%, #E9ECEF 0)" }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#fff", margin: "3px auto" }} />
+            </div>
+            진행 중 (섭취/목표)
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#6B7684" }}>
+            <div style={{ width: 16, height: 16, borderRadius: "50%", border: "2px solid #EDF0F2", boxSizing: "border-box" }} />
+            기록 없음
+          </div>
         </div>
       </div>
 
